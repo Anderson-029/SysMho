@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PGPASSWORD=ander123 psql -U postgres -d sysmho -h localhost -c \"\\\\dt\")",
+      "Bash(PGPASSWORD=ander123 psql -U postgres -d sysmho -h localhost -c \"\\\\d neural_coordinates\" -c \"\\\\d sentiment_data_ts\")"
+    ]
+  }
+}

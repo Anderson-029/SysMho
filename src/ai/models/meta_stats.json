@@ -1,0 +1,367 @@
+{
+  "BTC/USDT": {
+    "total_trades": 178,
+    "winning_trades": 150,
+    "win_rate": 0.8427,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "20_SHORT": {
+        "total": 100,
+        "wins": 100,
+        "win_rate": 1.0
+      },
+      "21_SHORT": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "21_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "5_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "22_SHORT": {
+        "total": 3,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:40:03.448716+00:00"
+  },
+  "ADA/USDT": {
+    "total_trades": 97,
+    "winning_trades": 47,
+    "win_rate": 0.4845,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "20_SHORT": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "21_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "17_SHORT": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "0_LONG": {
+        "total": 22,
+        "wins": 22,
+        "win_rate": 1.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:39:03.439701+00:00"
+  },
+  "SOL/USDT": {
+    "total_trades": 193,
+    "winning_trades": 75,
+    "win_rate": 0.3886,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "21_LONG": {
+        "total": 75,
+        "wins": 50,
+        "win_rate": 0.6667
+      },
+      "18_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "19_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "2_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "23_LONG": {
+        "total": 22,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "4_LONG": {
+        "total": 15,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "16_SHORT": {
+        "total": 6,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:40:03.447276+00:00"
+  },
+  "BNB/USDT": {
+    "total_trades": 190,
+    "winning_trades": 50,
+    "win_rate": 0.2632,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "21_SHORT": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "4_SHORT": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "5_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "18_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "21_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "16_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "17_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "4_LONG": {
+        "total": 15,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:39:03.441158+00:00"
+  },
+  "XRP/USDT": {
+    "total_trades": 55,
+    "winning_trades": 55,
+    "win_rate": 1.0,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "21_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "5_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "16_SHORT": {
+        "total": 5,
+        "wins": 5,
+        "win_rate": 1.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:40:03.447635+00:00"
+  },
+  "DOT/USDT": {
+    "total_trades": 191,
+    "winning_trades": 116,
+    "win_rate": 0.6073,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "21_LONG": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "14_LONG": {
+        "total": 35,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "15_LONG": {
+        "total": 32,
+        "wins": 25,
+        "win_rate": 0.7812
+      },
+      "23_LONG": {
+        "total": 45,
+        "wins": 22,
+        "win_rate": 0.4889
+      },
+      "0_LONG": {
+        "total": 22,
+        "wins": 22,
+        "win_rate": 1.0
+      },
+      "13_LONG": {
+        "total": 15,
+        "wins": 15,
+        "win_rate": 1.0
+      },
+      "13_SHORT": {
+        "total": 10,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "20_LONG": {
+        "total": 4,
+        "wins": 4,
+        "win_rate": 1.0
+      },
+      "22_SHORT": {
+        "total": 3,
+        "wins": 3,
+        "win_rate": 1.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:40:03.449422+00:00"
+  },
+  "ETH/USDT": {
+    "total_trades": 98,
+    "winning_trades": 25,
+    "win_rate": 0.2551,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "21_SHORT": {
+        "total": 50,
+        "wins": 25,
+        "win_rate": 0.5
+      },
+      "15_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "23_LONG": {
+        "total": 23,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:39:03.438192+00:00"
+  },
+  "LINK/USDT": {
+    "total_trades": 65,
+    "winning_trades": 25,
+    "win_rate": 0.3846,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "14_SHORT": {
+        "total": 25,
+        "wins": 25,
+        "win_rate": 1.0
+      },
+      "18_SHORT": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "4_LONG": {
+        "total": 15,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:39:03.440552+00:00"
+  },
+  "POL/USDT": {
+    "total_trades": 102,
+    "winning_trades": 39,
+    "win_rate": 0.3824,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "20_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "0_LONG": {
+        "total": 22,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "13_LONG": {
+        "total": 37,
+        "wins": 37,
+        "win_rate": 1.0
+      },
+      "15_LONG": {
+        "total": 7,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "20_SHORT": {
+        "total": 4,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "22_SHORT": {
+        "total": 5,
+        "wins": 2,
+        "win_rate": 0.4
+      },
+      "23_SHORT": {
+        "total": 2,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:46:03.460486+00:00"
+  },
+  "AVAX/USDT": {
+    "total_trades": 99,
+    "winning_trades": 56,
+    "win_rate": 0.5657,
+    "avg_pnl_pct": 0.0,
+    "by_hour": {
+      "21_LONG": {
+        "total": 25,
+        "wins": 0,
+        "win_rate": 0.0
+      },
+      "23_LONG": {
+        "total": 45,
+        "wins": 45,
+        "win_rate": 1.0
+      },
+      "13_LONG": {
+        "total": 11,
+        "wins": 11,
+        "win_rate": 1.0
+      },
+      "14_LONG": {
+        "total": 18,
+        "wins": 0,
+        "win_rate": 0.0
+      }
+    },
+    "confidence_calibration": {},
+    "last_updated": "2026-03-31T23:40:03.446197+00:00"
+  }
+}

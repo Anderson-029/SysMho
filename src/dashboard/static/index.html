@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SysMho - Centro de Comando Universal</title>
+    <!-- Fuentes y librerías externas -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+
+<body>
+
+    <nav>
+        <!-- ── Logo ─────────────────────────────────── -->
+        <div class="logo">
+            <div class="logo-icon-wrap">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div class="logo-text-wrap">
+                <span class="logo-main">SYS<span class="logo-red">MHO</span></span>
+                <span class="logo-sub">ALGORITHMIC · v15.1</span>
+            </div>
+        </div>
+
+        <!-- ── Controles + Indicadores + Stats ──────── -->
+        <div style="display: flex; gap: 0.6rem; align-items: center; position: relative; z-index: 101;">
+
+            <!-- Acción táctica -->
+            <button onclick="injectTestSignal()" class="btn btn-ctrl"
+                style="font-family: 'JetBrains Mono', monospace; background: rgba(16,185,129,0.06); color: #34d399; border: 1px solid rgba(16,185,129,0.2); padding: 0.38rem 0.85rem; font-size: 0.6rem; letter-spacing: 1px; border-radius: 5px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s;">
+                <i class="fa-solid fa-bolt"></i>&nbsp;SEÑAL RÁPIDA
+            </button>
+
+            <!-- Separador visual -->
+            <div style="width: 1px; height: 20px; background: rgba(220,38,38,0.15); margin: 0 0.1rem;"></div>
+
+            <!-- Badge sincronización de datos -->
+            <div id="syncBadge" style="display:none;" class="api-status">
+                <i class="fa-solid fa-rotate fa-spin"></i> <span id="syncDetail">SINCRONIZANDO...</span>
+            </div>
+
+            <!-- Badge modo autónomo -->
+            <div id="autonomyBadge" class="api-status"
+                style="cursor:pointer; min-width:100px; justify-content:center;"
+                title="Modo Autónomo — click para panel de control"
+                onclick="toggleAutonomyPanel()">
+                <i class="fa-solid fa-robot"></i> <span id="autonomyLabel">MANUAL</span>
+            </div>
+
+            <!-- Estado del Enlace API -->
+            <div id="apiLinkStatus" class="api-status api-init">
+                <i class="fa-solid fa-satellite-dish fa-spin"></i> ENLACE...
+            </div>
+
+            <!-- Estado de la Base de Datos -->
+            <div id="dbLinkStatus" class="api-status api-init">
+                <i class="fa-solid fa-database fa-spin"></i> BD...
+            </div>
+
+            <!-- Frescura de datos de mercado -->
+            <div id="dataFreshness" class="api-status api-init" title="Antigüedad de la última vela 5m">
+                <i class="fa-solid fa-wave-square fa-spin"></i> DATOS...
+            </div>
+
+            <!-- Cronómetro próximo scan -->
+            <div id="scanCountdown" class="api-status"
+                style="background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.15); color: #34d399; min-width: 105px; justify-content: center;"
+                title="Tiempo hasta el próximo scan de predicciones (cada 5 min)">
+                <i class="fa-solid fa-stopwatch"></i> <span id="countdownValue">--:--</span>
+            </div>
+
+            <!-- Separador visual -->
+            <div style="width: 1px; height: 20px; background: rgba(220,38,38,0.15); margin: 0 0.2rem;"></div>
+
+            <!-- Stats -->
+            <div class="stats-container">
+                <!-- Selector de Divisa -->
+                <div class="stat-box" style="align-items: center;">
+                    <span class="stat-label">Divisa</span>
+                    <select id="currencySelector" onchange="changeCurrency()"
+                        style="background: transparent; color: var(--text-main); border: none; font-size: 1rem; font-weight: 700; cursor: pointer; outline: none; font-family: 'JetBrains Mono', monospace;">
+                        <option value="USD" selected>USD $</option>
+                        <option value="COP">COP 🇨🇴</option>
+                        <option value="EUR">EUR €</option>
+                    </select>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Capital Operativo</span>
+                    <span class="stat-value" id="totalBalance">$0.00</span>
+                </div>
+                <div class="stat-box" style="position:relative;">
+                    <span class="stat-label">PnL Diario</span>
+                    <span class="stat-value" id="globalPnl" style="font-weight: 800;">$0.00</span>
+                    <button onclick="resetDailyPnl()" title="Reiniciar PnL diario" style="position:absolute; top:4px; right:4px; background:none; border:1px solid rgba(100,116,139,0.4); border-radius:3px; color:#64748b; font-size:0.55rem; padding:1px 4px; cursor:pointer; line-height:1.4;" onmouseover="this.style.borderColor='#fb923c';this.style.color='#fb923c'" onmouseout="this.style.borderColor='rgba(100,116,139,0.4)';this.style.color='#64748b'">↺</button>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Activos</span>
+                    <span class="stat-value" style="color: #34d399;" id="activeAssetsCount">10 Vigilando</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Margen en Uso</span>
+                    <span class="stat-value" id="marginInUse">$0.00</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Invertido Total</span>
+                    <span class="stat-value" id="totalNotional">$0.00</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-grid">
+
+        <!-- Monitor de Mercado Multivista Dinámico -->
+        <div id="chartsContainer" class="charts-container">
+            <!-- Se generan dinámicamente por JS -->
+        </div>
+
+        <div class="bottom-section">
+            <!-- Auditoría de Riesgos y Historial -->
+            <div class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <div class="panel-header">
+                        <h3 class="panel-title"><i class="fa-solid fa-shield-halved"></i> Monitor de Predicciones</h3>
+                        <button class="btn-mini" onclick="dismissAllSignals()"
+                            style="font-size: 0.55rem; padding: 2px 8px;">LIMPIAR TODO</button>
+                    </div>
+                    <div id="signalsContainer" class="signal-list" style="max-height: 300px;">
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted); opacity: 0.5;">
+                            Sincronizando señales...
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                    <div class="panel-header" style="margin-bottom: 0.75rem;">
+                        <h3 class="panel-title" style="font-size: 0.85rem; color: var(--text-muted);">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Historial de Autorizadas
+                        </h3>
+                    </div>
+                    <div id="historyContainer" class="signal-list" style="max-height: 250px; font-size: 0.8rem;">
+                        <!-- Historial de trades cerrados -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posiciones Abiertas -->
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><i class="fa-solid fa-briefcase"></i> Posiciones Abiertas</h3>
+                    <span id="posCount" class="symbol-badge" style="background: var(--secondary); font-size: 0.6rem;">0
+                        Activas</span>
+                </div>
+                <div id="positionsContainer" class="signal-list" style="max-height: 600px;">
+                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        No hay posiciones abiertas actualmente.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Telemetría -->
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title"><i class="fa-solid fa-terminal"></i> Telemetría Neuronal</h3>
+                </div>
+                <div class="terminal-wrapper" style="height: 600px;">
+                    <div class="terminal-header">
+                        <div style="display:flex; gap:6px;">
+                            <div class="dot dot-r"></div>
+                            <div class="dot dot-y"></div>
+                            <div class="dot dot-g"></div>
+                            <span
+                                style="font-size: 10px; color: #666; font-family: monospace; margin-left:10px;">sysmho-core.log</span>
+                        </div>
+                        <div class="terminal-controls">
+                            <button id="toggleMathSpam" class="btn-mini active" onclick="toggleSpam()">FILTRAR
+                                SPAM</button>
+                            <button class="btn-mini" onclick="clearLocalLogs()">LIMPIAR</button>
+                        </div>
+                    </div>
+                    <div id="terminal-content"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Overlay: SysMho Offline -->
+    <div id="offlineOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(13,17,23,0.92); z-index:400; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+        <div style="text-align:center; padding:2.5rem;">
+            <div style="font-size:3rem; margin-bottom:1rem; opacity:0.4;">
+                <i class="fa-solid fa-power-off"></i>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:700; color:#64748b; letter-spacing:3px; margin-bottom:0.5rem;">
+                SYSMHO OFFLINE
+            </div>
+            <div style="font-size:0.72rem; color:#30363d; letter-spacing:1px; font-family:'JetBrains Mono',monospace;">
+                Esperando reconexión...
+            </div>
+            <div style="margin-top:1.5rem; display:flex; gap:6px; justify-content:center;">
+                <span style="width:6px; height:6px; border-radius:50%; background:#30363d; display:inline-block; animation:pulse-dot 1.4s ease-in-out infinite;"></span>
+                <span style="width:6px; height:6px; border-radius:50%; background:#30363d; display:inline-block; animation:pulse-dot 1.4s ease-in-out 0.2s infinite;"></span>
+                <span style="width:6px; height:6px; border-radius:50%; background:#30363d; display:inline-block; animation:pulse-dot 1.4s ease-in-out 0.4s infinite;"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de Control de Autonomía -->
+    <div id="autonomyPanel" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:500; align-items:center; justify-content:center;">
+        <div style="background:#0d1117; border:1px solid rgba(48,54,61,0.8); border-top:2px solid #10b981; border-radius:10px; padding:2rem; width:520px; max-width:95vw; max-height:80vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <h2 style="color:#e6edf3; font-family:'JetBrains Mono',monospace; font-size:0.95rem; letter-spacing:2px;">
+                    <i class="fa-solid fa-robot" style="color:#10b981;"></i>&nbsp;CONTROL DE AUTONOMÍA
+                </h2>
+                <button onclick="toggleAutonomyPanel()" style="background:none; border:none; color:#64748b; font-size:1.2rem; cursor:pointer;">✕</button>
+            </div>
+
+            <!-- Estado actual -->
+            <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.15); border-radius:6px; padding:1rem; margin-bottom:1rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#94a3b8; font-size:0.75rem; letter-spacing:1px;">MODO ACTUAL</span>
+                    <span id="autonomyCurrentMode" style="font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.85rem; color:#34d399;">MANUAL</span>
+                </div>
+                <div id="cbStatus" style="margin-top:0.5rem; font-size:0.7rem; color:#64748b;"></div>
+            </div>
+
+            <!-- Estadísticas del día -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-bottom:1rem;">
+                <div style="background:rgba(13,17,23,0.8); border:1px solid rgba(48,54,61,0.4); border-radius:5px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.65rem; color:#94a3b8; font-weight:600;">Operaciones Hoy</div>
+                    <div id="autonTradesToday" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#e6edf3; font-size:1rem;">—</div>
+                    <div style="font-size:0.55rem; color:#64748b;">ejecutadas / límite</div>
+                </div>
+                <div style="background:rgba(13,17,23,0.8); border:1px solid rgba(48,54,61,0.4); border-radius:5px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.65rem; color:#94a3b8; font-weight:600;">Ganancia Hoy</div>
+                    <div id="autonDailyPnl" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#e6edf3; font-size:1rem;">—</div>
+                    <div style="font-size:0.55rem; color:#64748b;">% sobre capital</div>
+                </div>
+                <div style="background:rgba(13,17,23,0.8); border:1px solid rgba(48,54,61,0.4); border-radius:5px; padding:0.6rem; text-align:center;">
+                    <div style="font-size:0.65rem; color:#94a3b8; font-weight:600;">Pérdidas Seguidas</div>
+                    <div id="autonConsecLosses" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#e6edf3; font-size:1rem;">—</div>
+                    <div style="font-size:0.55rem; color:#64748b;">consecutivas / límite</div>
+                </div>
+            </div>
+
+            <!-- SelfLearner stats -->
+            <div style="background:rgba(13,17,23,0.8); border:1px solid rgba(48,54,61,0.4); border-radius:6px; padding:0.75rem; margin-bottom:1rem; font-size:0.72rem; color:#94a3b8;">
+                <div style="color:#94a3b8; font-size:0.65rem; font-weight:600; margin-bottom:0.4rem;">Rendimiento del Modelo IA</div>
+                <div id="learnerStats" style="font-family:'JetBrains Mono',monospace; line-height:1.8;">Cargando...</div>
+            </div>
+
+            <!-- Botones de control -->
+            <div style="display:flex; gap:0.75rem; margin-bottom:0.6rem;">
+                <button onclick="setAutonomyMode(true)"
+                    style="flex:1; padding:0.65rem; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:#34d399; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:0.65rem; font-weight:700; letter-spacing:1px; cursor:pointer;">
+                    <i class="fa-solid fa-robot"></i>&nbsp;ACTIVAR AUTONOMÍA
+                </button>
+                <button onclick="setAutonomyMode(false)"
+                    style="flex:1; padding:0.65rem; background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.2); color:#f43f5e; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:0.65rem; font-weight:700; letter-spacing:1px; cursor:pointer;">
+                    <i class="fa-solid fa-hand"></i>&nbsp;MODO MANUAL
+                </button>
+            </div>
+
+            <!-- Reset Circuit Breaker -->
+            <button id="btnResetCB" onclick="resetCircuitBreaker()"
+                style="width:100%; padding:0.55rem; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.2); color:#fbbf24; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:0.6rem; font-weight:700; letter-spacing:1px; cursor:pointer; margin-bottom:1rem; transition:all 0.2s;">
+                <i class="fa-solid fa-arrow-rotate-right"></i>&nbsp;REINICIAR CONTADORES DE SEGURIDAD
+            </button>
+
+            <!-- Historial de decisiones autónomas -->
+            <div>
+                <div style="color:#94a3b8; font-size:0.65rem; font-weight:600; margin-bottom:0.5rem;">Últimas decisiones del bot</div>
+                <div id="autonomyDecisions" style="max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:0.3rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lock Screen de Autenticación -->
+    <div id="lockScreen">
+        <div class="lock-box">
+            <h2>🔐 SYSMHO</h2>
+            <p>Centro de Comando — Acceso restringido</p>
+            <input type="password" id="apiKeyInput" placeholder="Ingresa tu API Key" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') unlockDashboard()">
+            <button class="btn btn-primary" style="width:100%; padding:0.75rem; font-weight:800; letter-spacing:1px;"
+                    onclick="unlockDashboard()">ACCEDER</button>
+            <div id="lockError">Key incorrecta. Intenta de nuevo.</div>
+        </div>
+    </div>
+
+    <script src="/assets/app.js" defer></script>
+</body>
+
+</html>
