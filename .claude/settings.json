@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(PGPASSWORD=ander123 psql -U postgres -d sysmho -h localhost -c \"SELECT COUNT\\(*\\) FROM neural_coordinates\" -c \"SELECT COUNT\\(*\\) FROM sentiment_data_ts\")"
-    ]
-  }
-}

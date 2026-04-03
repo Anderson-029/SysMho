@@ -29,3 +29,6 @@ src/ai/models/*.joblib
 # OS
 .DS_Store
 Thumbs.db
+
+# uv
+uv.lock
