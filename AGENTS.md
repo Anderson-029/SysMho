@@ -34,7 +34,7 @@ Communication: PostgreSQL (shared data) + `src/runtime_state.json` (IPC: autonom
 
 ## Skills Index
 
-> **Index rule**: Each row mirrors the `name` and `description` from the corresponding `.agents/skills/{name}/SKILL.md` frontmatter. When adding, removing, or modifying any skill, update this index to match. To rebuild from scratch: scan all `.agents/skills/*/SKILL.md`, extract each YAML frontmatter `name` and `description`, and regenerate the tables below.
+> **Index rule**: Each row mirrors the `name` and `description` from the corresponding `.claude/skills/{name}/SKILL.md` frontmatter. When adding, removing, or modifying any skill, update this index to match. To rebuild from scratch: scan all `.claude/skills/*/SKILL.md`, extract each YAML frontmatter `name` and `description`, and regenerate the tables below.
 
 Load **only** the skill you need. If the task crosses domains, load max 2–3.
 
@@ -42,28 +42,28 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 
 | Skill | Description | Path |
 |-------|-------------|------|
-| `sysmho` | Master diagnostic panel — runs a full system health check in one command. Use when you need a quick overview of all SysMho subsystems. | `.agents/skills/sysmho/SKILL.md` |
-| `sysmho-deploy` | Controlled restart — verifies open positions, stops processes, applies pending migrations, starts in order. Use when restarting SysMho safely. | `.agents/skills/sysmho-deploy/SKILL.md` |
-| `sysmho-signals` | Tactical signals view — pending signals, recent history, approval rate and decision context. Use when reviewing trading signal activity. | `.agents/skills/sysmho-signals/SKILL.md` |
-| `sysmho-logs` | Reads and analyzes neural telemetry from the brain log grouped by event type. Use when investigating runtime behavior or errors. | `.agents/skills/sysmho-logs/SKILL.md` |
-| `sysmho-performance` | Real performance analysis — KPIs, win rate, PnL, best assets and MetaEvaluator calibration. Use when evaluating trading performance. | `.agents/skills/sysmho-performance/SKILL.md` |
-| `sysmho-market` | Real-time crypto market context — BTC/ETH trends, funding rates, RSI for all 10 assets and overheating alerts. Use when assessing current market conditions. | `.agents/skills/sysmho-market/SKILL.md` |
-| `sysmho-test` | Runs the complete test suite and reports results with failure context. Use when validating code changes or checking test health. | `.agents/skills/sysmho-test/SKILL.md` |
-| `sysmho-audit` | Full integrity audit — verifies coherence between local DB, Binance and system state. Use when suspecting data mismatches or desynchronization. | `.agents/skills/sysmho-audit/SKILL.md` |
-| `sysmho-migrate` | Applies SQL migrations safely and verifies they were applied correctly. Use when there are pending database migrations. | `.agents/skills/sysmho-migrate/SKILL.md` |
-| `sysmho-retrain` | Orchestrates safe XGBoost retraining — verifies data, backs up old model, retrains and validates metrics. Use when the model needs retraining. | `.agents/skills/sysmho-retrain/SKILL.md` |
-| `sysmho-cb-tune` | Analyzes trade history and suggests optimal Circuit Breaker thresholds with statistical evidence. Use when calibrating CB parameters. | `.agents/skills/sysmho-cb-tune/SKILL.md` |
+| `sysmho` | Master diagnostic panel — runs a full system health check in one command. Use when you need a quick overview of all SysMho subsystems. | `.claude/skills/sysmho/SKILL.md` |
+| `sysmho-deploy` | Controlled restart — verifies open positions, stops processes, applies pending migrations, starts in order. Use when restarting SysMho safely. | `.claude/skills/sysmho-deploy/SKILL.md` |
+| `sysmho-signals` | Tactical signals view — pending signals, recent history, approval rate and decision context. Use when reviewing trading signal activity. | `.claude/skills/sysmho-signals/SKILL.md` |
+| `sysmho-logs` | Reads and analyzes neural telemetry from the brain log grouped by event type. Use when investigating runtime behavior or errors. | `.claude/skills/sysmho-logs/SKILL.md` |
+| `sysmho-performance` | Real performance analysis — KPIs, win rate, PnL, best assets and MetaEvaluator calibration. Use when evaluating trading performance. | `.claude/skills/sysmho-performance/SKILL.md` |
+| `sysmho-market` | Real-time crypto market context — BTC/ETH trends, funding rates, RSI for all 10 assets and overheating alerts. Use when assessing current market conditions. | `.claude/skills/sysmho-market/SKILL.md` |
+| `sysmho-test` | Runs the complete test suite and reports results with failure context. Use when validating code changes or checking test health. | `.claude/skills/sysmho-test/SKILL.md` |
+| `sysmho-audit` | Full integrity audit — verifies coherence between local DB, Binance and system state. Use when suspecting data mismatches or desynchronization. | `.claude/skills/sysmho-audit/SKILL.md` |
+| `sysmho-migrate` | Applies SQL migrations safely and verifies they were applied correctly. Use when there are pending database migrations. | `.claude/skills/sysmho-migrate/SKILL.md` |
+| `sysmho-retrain` | Orchestrates safe XGBoost retraining — verifies data, backs up old model, retrains and validates metrics. Use when the model needs retraining. | `.claude/skills/sysmho-retrain/SKILL.md` |
+| `sysmho-cb-tune` | Analyzes trade history and suggests optimal Circuit Breaker thresholds with statistical evidence. Use when calibrating CB parameters. | `.claude/skills/sysmho-cb-tune/SKILL.md` |
 
 ### Development (6)
 
 | Skill | Description | Path |
 |-------|-------------|------|
-| `sysmho-impact` | Impact analysis before modifying a file or area — transitive dependencies, DB tables, env vars, test coverage and regression risk. Use before modifying any source code. | `.agents/skills/sysmho-impact/SKILL.md` |
-| `sysmho-fix` | Bug diagnosis — reads involved files, identifies root cause and proposes exact fix before touching anything. Use when investigating a bug. | `.agents/skills/sysmho-fix/SKILL.md` |
-| `sysmho-refactor` | Analyzes a module and lists concrete cleanup opportunities with code evidence — no changes without approval. Use when looking for refactoring targets. | `.agents/skills/sysmho-refactor/SKILL.md` |
-| `sysmho-test-coverage` | Maps which modules have tests and which critical functions are not covered. Use when deciding which tests to write next. | `.agents/skills/sysmho-test-coverage/SKILL.md` |
-| `sysmho-pre-commit` | Pre-save consistency checklist — versions, SQL injection risks, stale constants, dead imports. Use before committing changes. | `.agents/skills/sysmho-pre-commit/SKILL.md` |
-| `sysmho-cleanup` | Cleans the codebase by removing dead code, unused imports, unconsumed indicators, orphan files — always with evidence and confirmation. Use when reducing technical debt. | `.agents/skills/sysmho-cleanup/SKILL.md` |
+| `sysmho-impact` | Impact analysis before modifying a file or area — transitive dependencies, DB tables, env vars, test coverage and regression risk. Use before modifying any source code. | `.claude/skills/sysmho-impact/SKILL.md` |
+| `sysmho-fix` | Bug diagnosis — reads involved files, identifies root cause and proposes exact fix before touching anything. Use when investigating a bug. | `.claude/skills/sysmho-fix/SKILL.md` |
+| `sysmho-refactor` | Analyzes a module and lists concrete cleanup opportunities with code evidence — no changes without approval. Use when looking for refactoring targets. | `.claude/skills/sysmho-refactor/SKILL.md` |
+| `sysmho-test-coverage` | Maps which modules have tests and which critical functions are not covered. Use when deciding which tests to write next. | `.claude/skills/sysmho-test-coverage/SKILL.md` |
+| `sysmho-pre-commit` | Pre-save consistency checklist — versions, SQL injection risks, stale constants, dead imports. Use before committing changes. | `.claude/skills/sysmho-pre-commit/SKILL.md` |
+| `sysmho-cleanup` | Cleans the codebase by removing dead code, unused imports, unconsumed indicators, orphan files — always with evidence and confirmation. Use when reducing technical debt. | `.claude/skills/sysmho-cleanup/SKILL.md` |
 
 
 
@@ -86,12 +86,12 @@ For area-specific context, read the relevant nested file:
 
 Keep the agentic setup in sync with the codebase. Apply after any structural change:
 
-### Skills (`.agents/skills/`)
+### Skills (`.claude/skills/`)
 
-- **Added a skill**: Create `.agents/skills/{name}/SKILL.md` with YAML frontmatter (`name`, `description`, and optionally `allowed-tools`, `compatibility`, `metadata`). Add a row to the Skills Index above matching the frontmatter `description` exactly.
-- **Removed a skill**: Delete the folder under `.agents/skills/`. Remove its row from the Skills Index.
+- **Added a skill**: Create `.claude/skills/{name}/SKILL.md` with YAML frontmatter (`name`, `description`, and optionally `allowed-tools`, `compatibility`, `metadata`). Add a row to the Skills Index above matching the frontmatter `description` exactly.
+- **Removed a skill**: Delete the folder under `.claude/skills/`. Remove its row from the Skills Index.
 - **Modified a skill's description**: Update the corresponding row in the Skills Index to match the new frontmatter `description`.
-- **Rebuild index from scratch**: Scan all `.agents/skills/*/SKILL.md`, read each YAML frontmatter, regenerate both tables grouped by Operational and Development.
+- **Rebuild index from scratch**: Scan all `.claude/skills/*/SKILL.md`, read each YAML frontmatter, regenerate both tables grouped by Operational and Development.
 
 ### Source code (reflects in nested AGENTS.md)
 

@@ -107,4 +107,4 @@ ORDER BY minutes_ago DESC;
 | `migration_v15_0_0.sql` | Marks v2 models deprecated; adds index on `model_performance.model_name` |
 | `migration_v15_2_0.sql` | Creates `autonomous_decisions` and `meta_stats` tables |
 
-**How to apply**: Use the `sysmho-migrate` skill (`.agents/skills/sysmho-migrate/SKILL.md`) which guides safe application and verification. To apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
+**How to apply**: Use the `sysmho-migrate` skill (`.claude/skills/sysmho-migrate/SKILL.md`) which guides safe application and verification. To apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
