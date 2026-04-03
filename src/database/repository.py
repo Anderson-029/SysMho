@@ -204,6 +204,32 @@ class DatabaseRepository:
             async with self.pool.acquire() as conn:
                 await conn.execute(query, amount, pnl)
 
+    async def sync_wallet_from_exchange(
+        self, available_balance: float, total_balance: float, in_positions: float = 0.0
+    ) -> None:
+        """
+        Sobrescribe el portfolio con valores reales obtenidos directamente de Binance.
+
+        A diferencia de sync_portfolio_on_trade (incremental), esta función reemplaza
+        los valores absolutos. Usada en startup_reconciliation y correcciones manuales.
+
+        Args:
+            available_balance: Balance disponible real desde Binance (availableBalance).
+            total_balance: Balance total real desde Binance (totalMarginBalance).
+            in_positions: Suma de invested_usdt de posiciones locales abiertas.
+        """
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """UPDATE portfolio SET
+                   available_balance = $1,
+                   total_balance = $2,
+                   in_positions = $3,
+                   recorded_at = NOW()
+                   WHERE id = (SELECT id FROM portfolio ORDER BY recorded_at DESC LIMIT 1)
+                """,
+                available_balance, total_balance, in_positions
+            )
+
     async def upsert_sentiment(
         self, symbol: str, funding_rate: float, open_interest: float
     ) -> None:

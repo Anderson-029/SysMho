@@ -766,6 +766,69 @@ class AutonomousBot:
             await asyncio.sleep(30)
 
     # ------------------------------------------------------------------ #
+    #  RECONCILIACIÓN DE ARRANQUE                                        #
+    # ------------------------------------------------------------------ #
+
+    async def _startup_reconciliation(self) -> None:
+        """
+        Reconcilia el estado de la BD contra Binance al arrancar el Motor.
+
+        Detecta y corrige tres condiciones antes de iniciar cualquier loop:
+          1. Posiciones en BD que Binance ya no tiene (cerradas externamente) → BINANCE_SYNC
+          2. Posiciones con lado incorrecto (BD=SELL vs Binance=BUY) → SIDE_MISMATCH fix
+          3. Portfolio desactualizado → sobrescribir con balance real de Binance
+
+        Si Binance no responde, se omite y el motor arranca con los datos locales.
+        """
+        print("🔍 [STARTUP] Reconciliando estado BD vs Binance...")
+
+        # 1. Obtener posiciones reales de Binance
+        official_details = await self.trader.get_active_positions_details()
+        if official_details is None:
+            print("⚠️ [STARTUP] Binance no respondió — reconciliación omitida, arrancando con BD actual.")
+            return
+
+        # 2. Obtener posiciones locales
+        async with self.db.pool.acquire() as conn:
+            positions = await conn.fetch("SELECT * FROM positions")
+
+        for pos in positions:
+            symbol = pos['symbol']
+            official = official_details.get(symbol)
+
+            if official is None:
+                # Posición en BD que Binance no tiene → fue cerrada externamente
+                print(f"📡 [STARTUP] {symbol} no existe en Binance — sincronizando cierre en BD...")
+                await self.monitor._close_position(
+                    pos, 0.0, float(pos['pnl_unrealized'] or 0), "BINANCE_SYNC"
+                )
+            elif official['side'] != pos['side']:
+                # Lado incorrecto → corregir registro local
+                await self.monitor._correct_side_mismatch(pos, official)
+
+        # 3. Sincronizar portfolio desde Binance con valores reales
+        try:
+            balance = await self.trader.exchange.fetch_balance()
+            info = balance.get('info', {})
+            available = float(info.get('availableBalance', 0.0))
+            total = float(info.get('totalMarginBalance', info.get('totalWalletBalance', available)))
+
+            async with self.db.pool.acquire() as conn:
+                in_pos = await conn.fetchval(
+                    "SELECT COALESCE(SUM(invested_usdt), 0) FROM positions"
+                )
+
+            await self.db.sync_wallet_from_exchange(available, total, float(in_pos or 0))
+            print(
+                f"✅ [STARTUP] Portfolio sincronizado — "
+                f"total: ${total:.2f}, disponible: ${available:.2f}, en posiciones: ${float(in_pos or 0):.2f}"
+            )
+        except Exception as e:
+            print(f"⚠️ [STARTUP] Error sincronizando portfolio desde Binance: {e}")
+
+        print("✅ [STARTUP] Reconciliación completada.")
+
+    # ------------------------------------------------------------------ #
     #  ARRANQUE                                                           #
     # ------------------------------------------------------------------ #
 
@@ -774,6 +837,7 @@ class AutonomousBot:
         self.is_running = True
         print(f"\n🚀 IGNICIÓN: Conectando {len(self.symbols)} activos...\n")
         await self.db.connect()
+        await self._startup_reconciliation()
 
         # ── Relleno de vacíos históricos ────────────────────────────────
         try:

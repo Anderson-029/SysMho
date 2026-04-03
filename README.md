@@ -1,195 +1,191 @@
-# SysMho — Neural Combat Financial System
+# SysMho v15.2.0 — Sistema de Trading Autónomo
 
-> Autonomous crypto trading bot on Binance Futures powered by XGBoost AI.
-> Version: 15.2.0 | Status: Operational
+> Bot de trading algorítmico en Binance Futures con IA (XGBoost v3, 27 features).
+> **Estado:** ✅ Operacional | **Última actualización:** Abril 3, 2026
 
-## What is SysMho?
+## ¿Qué es SysMho?
 
-SysMho is an algorithmic trading system for perpetual crypto futures on Binance. It combines multi-timeframe technical analysis, swarm intelligence across 10 assets, an XGBoost model trained on 27 features, strict mathematical risk control, and an autonomous decision engine with continuous learning.
+SysMho es un sistema de trading algorítmico para futuros perpetuos en Binance. Combina análisis técnico multi-timeframe, inteligencia colectiva en 10 activos, modelo XGBoost entrenado con 27 features, control matemático de riesgo estricto, y motor de decisión autónomo con aprendizaje continuo.
 
-**Two operating modes:**
-- **Manual**: Every signal requires human approval via the dashboard (Human-in-the-Loop).
-- **Autonomous**: MetaEvaluator scores each signal statistically and decides automatically. Circuit Breaker acts as safety net.
+**Dos modos operacionales:**
+- **Manual**: Cada señal requiere aprobación humana via dashboard.
+- **Autónomo**: MetaEvaluador puntúa estadísticamente y decide automáticamente. CircuitBreaker como red de seguridad.
 
-**Portfolio**: BTC, ETH, BNB, SOL, XRP, ADA, AVAX, LINK, DOT, POL — all /USDT perpetual futures.
-**Timeframes**: 5m (primary prediction) + 1h, 4h (macro context).
+**Portfolio**: BTC, ETH, BNB, SOL, XRP, ADA, AVAX, LINK, DOT, POL — todos /USDT futuros perpetuos.
+**Timeframes**: 5m (predicción principal) + 1h, 4h (contexto macro).
 
-## Quick Start
+## Inicio Rápido
 
-### Prerequisites
+### Requisitos
 
 - Python 3.12+
-- PostgreSQL (local, database `sysmho`)
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
+- PostgreSQL 12+
+- [uv](https://docs.astral.sh/uv/) o pip
 
-### Setup
+### Instalación
 
 ```bash
-# Clone and enter the repo
+# Clonar y entrar
 git clone <repo-url> && cd SysMho
 
-# Copy environment file and fill in your keys
+# Copiar archivo de configuración
 cp .env.example .env
 
-# Install dependencies (pick one)
-uv sync           # recommended — manages venv automatically
-pip install -r requirements.txt  # fallback
+# Instalar dependencias
+uv sync           # recomendado
 ```
 
-### Configure `.env`
+### Configurar `.env`
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `BINANCE_API_KEY` | Yes | Binance Futures API key |
-| `BINANCE_SECRET_KEY` | Yes | Binance Futures secret |
-| `BINANCE_TESTNET` | Yes | `True` for testnet, `False` for mainnet |
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `BINANCE_API_KEY` | Sí | Clave API Binance Futures |
+| `BINANCE_SECRET_KEY` | Sí | Secreto Binance Futures |
+| `BINANCE_TESTNET` | Sí | `True` testnet, `False` mainnet |
 | `DB_HOST` | No | Default: `localhost` |
 | `DB_PORT` | No | Default: `5432` |
 | `DB_USER` | No | Default: `postgres` |
 | `DB_PASSWORD` | No | Default: `postgres` |
 | `DB_NAME` | No | Default: `sysmho` |
-| `DASHBOARD_API_KEY` | Yes | API key for dashboard authentication |
 
-### Run
+### Sincronizar BD (si trabajas en equipo)
 
 ```bash
-# Option A: Use the startup script
-bash start_sysmho.sh
-
-# Option B: Start manually (two terminals)
-uv run uvicorn src.dashboard.api:app --host 0.0.0.0 --port 8000   # Terminal 1: Dashboard
-uv run python -m src.main                                          # Terminal 2: AI Engine
+# Si descargaste sysmho_full.sql:
+psql -U postgres -c "CREATE DATABASE sysmho;"
+psql -U postgres -d sysmho -f sysmho_full.sql
 ```
 
-Dashboard: http://localhost:8000 (authenticate with your `DASHBOARD_API_KEY`).
+### Iniciar
 
-## Architecture
+```bash
+# Terminal 1: Dashboard (http://localhost:8000)
+uv run uvicorn src.dashboard.api:app --host 0.0.0.0 --port 8000
+
+# Terminal 2: Motor IA
+uv run python -m src.main
+```
+
+## Arquitectura
 
 ```
-Binance (real market data via WebSocket + REST)
+Binance (WebSocket + REST)
     ↓
-GapFiller (fills historical gaps on startup)
+GapFiller (llena huecos históricos)
     ↓
-PostgreSQL (~6.7M candles, 10 tables)
+PostgreSQL (mercado, posiciones, trades)
     ↓
-FeatureEngineer (27 normalized features)
+FeatureEngineer (27 features normalizadas)
     ↓
 XGBoost v3 (SELL / WAIT / BUY)
     ↓
-RiskManager (position sizing, SL/TP, exposure limits)
-    ↓
-┌─────────────────┬──────────────────────┐
-│ Manual mode     │ Autonomous mode      │
-│ Human approves  │ CircuitBreaker check │
-│ via dashboard   │ MetaEvaluator score  │
-└────────┬────────┴──────────┬───────────┘
-         ↓                   ↓
-    TradeExecutor → Binance (testnet or mainnet)
+┌──────────────────┬─────────────────────┐
+│ Modo Manual      │ Modo Autónomo       │
+│ Aprobación       │ MetaEvaluador check │
+│ via dashboard    │ CircuitBreaker      │
+└────────┬─────────┴──────────┬──────────┘
+         ↓                    ↓
+    Trader → Binance (testnet/mainnet)
          ↓
-    PositionMonitor (1s loop: PnL, SL/TP, sync)
+    Monitor (loop 1s: PnL, SL/TP, sync)
          ↓
-    SelfLearner → meta_stats.json (continuous improvement)
+    SelfLearner → meta_stats.json
 ```
 
-**Two independent processes** communicate via PostgreSQL (data) and `src/runtime_state.json` (IPC control):
-- **AI Engine** (`uv run python -m src.main`) — data collection, prediction, execution, monitoring
-- **Dashboard** (`uv run uvicorn src.dashboard.api:app`) — REST API + web frontend
+**Dos procesos independientes** se comunican via PostgreSQL y `src/runtime_state.json`:
+- **Motor IA** — Datos, predicción, ejecución, monitoreo
+- **Dashboard** — API REST + interfaz web
 
-## Training the Model
+## Reentrenar Modelo
 
 ```bash
-# Train with existing hyperparameters
+# Con hiperparámetros existentes
 uv run python -m src.ai.trainer --symbol ALL --timeframe 5m
 
-# Retrain with Bayesian optimization (Optuna, ~30 min)
+# Con Optuna (Bayesian, ~30 min)
 uv run python -m src.ai.trainer --symbol ALL --timeframe 5m --tune --trials 50
 ```
 
-If you change the feature set (`MODEL_FEATURES` in `src/constants.py`), delete the old model first:
+Si cambias features en `src/constants.py`, elimina el modelo antes:
 ```bash
 rm src/ai/models/xgboost_v1.joblib
 ```
 
-## Running Tests
+## Tests
 
 ```bash
-uv run pytest          # full suite (56 tests)
-uv run pytest -x -v    # stop on first failure, verbose
+uv run pytest          # suite completa (50+ tests)
+uv run pytest -x -v    # parar en primer fallo
 ```
 
-## Autonomous Mode
+## Modo Autónomo
 
-Controlled via the dashboard's Autonomy panel (no restart needed):
+Controlado via dashboard (sin reinicio):
 
-| Component | Role |
+| Componente | Rol |
 |-----------|------|
-| **MetaEvaluator** | 5-component statistical filter (win rate, hourly WR, confidence calibration, loss streak, base confidence). Approves if `meta_score >= 0.52`. |
-| **Circuit Breaker** | 5 hard stops: max positions (3), max daily trades (8), max consecutive losses (3), daily loss limit (4%), weekly drawdown limit (8%). All configurable via `.env`. |
-| **SelfLearner** | Updates `meta_stats.json` per closed trade. Foundation for future XGBoost meta-model (Phase 2, needs 200+ trades). |
+| **MetaEvaluador** | 5 filtros estadísticos (WR, confianza, racha de pérdidas). Aprueba si `meta_score >= 0.52`. |
+| **CircuitBreaker** | 5 stops duros: max posiciones (3), trades/día (8), pérdidas consecutivas (3), límite diario (4%), semanal (8%). |
+| **SelfLearner** | Actualiza `meta_stats.json` por trade cerrado. Base para futuro meta-modelo XGBoost. |
 
-## Key Configuration (`src/constants.py`)
+## Configuración Clave (`src/constants.py`)
 
-| Parameter | Value | Description |
+| Parámetro | Valor | Descripción |
 |-----------|-------|-------------|
-| `LABEL_THRESHOLD` | 0.007 | Min movement (0.7%) to label BUY/SELL |
-| `NORMAL_MIN_CONFIDENCE` | 0.38 | Min signal confidence |
-| `NORMAL_INERTIA_THRESHOLD` | 0.72 | Veto if WAIT > 72% |
-| `HIGH_CONVICTION_THRESHOLD` | 0.55 | BOUNTY signal threshold |
-| `NORMAL_RISK_PER_TRADE` | 0.02 | 2% capital risk per trade |
-| `NORMAL_ATR_SL` / `NORMAL_ATR_TP` | 1.5 / 3.0 | SL at 1.5x ATR, TP at 3.0x ATR |
-| `NOTIONAL_CAP_RATIO` | 0.12 | Max 12% capital per trade |
-| `EXPOSURE_LIMIT_RATIO` | 0.50 | Block if total exposure > 50% |
-| `META_SCORE_THRESHOLD` | 0.52 | MetaEvaluator approval threshold |
+| `LABEL_THRESHOLD` | 0.007 | Movimiento mínimo (0.7%) para etiquetar BUY/SELL |
+| `NORMAL_MIN_CONFIDENCE` | 0.38 | Confianza mínima de señal |
+| `NORMAL_RISK_PER_TRADE` | 0.02 | 2% capital en riesgo por trade |
+| `NORMAL_ATR_SL` / `NORMAL_ATR_TP` | 1.5 / 3.0 | SL a 1.5x ATR, TP a 3.0x ATR |
+| `NOTIONAL_CAP_RATIO` | 0.12 | Max 12% capital por trade |
+| `EXPOSURE_LIMIT_RATIO` | 0.50 | Bloquea si exposición total > 50% |
+| `META_SCORE_THRESHOLD` | 0.52 | Umbral aprobación MetaEvaluador |
 
-## Migrating to Mainnet
+## Migrar a Mainnet
 
-1. Create Binance Futures API keys with trading permissions
-2. Update `.env`: set real keys and `BINANCE_TESTNET=False`
-3. Restart SysMho
+1. Crear claves API Binance Futures con permisos de trading
+2. Actualizar `.env`: `BINANCE_TESTNET=False` + claves reales
+3. Reiniciar SysMho
 
-Data collectors already use Binance mainnet (public endpoints). Only `trader.py` respects `BINANCE_TESTNET`.
+Los recolectores de datos ya usan mainnet (endpoints públicos). Solo `trader.py` respeta `BINANCE_TESTNET`.
 
-## Agent Setup
+## Skills Agenticas
 
-This project uses [Agent Skills](https://agentskills.io) for AI-assisted development. See `AGENTS.md` for the universal agent router, skills index, and maintenance protocol.
+Este proyecto usa Skills agenticas para desarrollo asistido. Ver `AGENTS.md` para el router universal, índice de skills y protocolo de mantenimiento.
 
-## Version History
+## Historial de Versiones
 
-### v15.2.0 (2026-03-30) — Current stable
-- Autonomous mode: MetaEvaluator with 5 statistical components
-- Circuit Breaker: 5 hard stops, configurable via env vars
-- SelfLearner: continuous learning from closed trades
-- Gap Filler: auto-fills historical gaps on startup
-- Runtime IPC channel via `runtime_state.json`
-- Persistent daily PnL tracking
-- Dashboard offline detection with auto-recovery
-- Color-coded telemetry (orange: CB, yellow: autonomy, green: execution)
+### v15.2.0 (2026-04-03) — Estable actual
+**Phase 8 — Correcciones de Coherencia BD vs Binance:**
+- ✅ Fix side mismatch: detecta y corrige sides invertidos entre BD y Binance
+- ✅ Fix error -2022: ReduceOnly retorna False (evita posiciones zombie)
+- ✅ Fix startup: _startup_reconciliation() reconcilia BD vs Binance al arrancar
+- ✅ Fix portfolio: sync_wallet_from_exchange() UPDATE no-incremental
+
+**Phase 9 — Reentrenamiento Optuna:**
+- Modelo anterior: 26.1 MB, overfitting severo (35.6% confianza >0.90)
+- Modelo nuevo: 8.8 MB, regularización óptima (max_depth=5, gamma=0.059)
+- Resultados: 87.5% accuracy hold-out, 68.3% win rate real
+
+**Phase 9.1 — Evaluación Relacional:**
+- Skill `sysmho-model-eval`: compara versiones, emite MEJORANDO/EMPEORANDO/ESTABLE
+- sysmho_full.sql: dump completo para sincronización de equipo
 
 ### v15.1.0 (2026-03-29)
-- End-to-end execution verified on Binance testnet
-- Real-time order telemetry in brain log
-- Vectorized backtest with real Binance fees (WR 58.2%, PF 2.12x)
+- Ejecución end-to-end verificada en Binance testnet
+- Telemetría de órdenes en real-time
 
 ### v15.0.0 (2026-03-29)
-- ML pipeline redesign: 27 clean features (from 65), all normalized
+- Pipeline ML rediseñado: 27 features limpios, todos normalizados
 - TimeSeriesSplit 5-fold validation
-- Balanced class weights
-- Swarm Intelligence with `swarm_bull_ratio` and temporal lag fix
-
-### v14.9.0 (2026-03-28)
-- REGULAR + BOUNTY alert system with composite scoring
-- Automatic signal timeout (5 min)
-
-### v14.8.5 (2026-03-26)
-- Critical fix: SHORT TP calculation
-- 56/56 tests green
-- Optuna retraining (50 trials, log-loss 0.2893)
 
 ## Roadmap
 
-1. Resolve Binance account verification for mainnet trading
-2. Accumulate 200+ trades in autonomous testnet mode for meta-model training
-3. Calibrate Circuit Breaker thresholds based on testnet results
-4. Train XGBoost meta-model on `meta_stats.json` (Phase 2 autonomy)
-5. Implement adaptive ATR-based labeling to replace fixed 0.7% threshold
-6. Add per-class precision metrics (BUY/SELL) to model evaluation
+1. Verificación Binance para mainnet trading
+2. Acumular 200+ trades autónomos en testnet para entrenamiento de meta-modelo
+3. Calibrar CircuitBreaker con resultados de testnet
+4. Entrenar meta-modelo XGBoost en `meta_stats.json` (Phase 10)
+5. Labeling adaptativo ATR en lugar de umbral fijo 0.7%
+
+---
+
+**Documentación detallada:** Ver `AGENTS.md` (skills), `src/AGENTS.md` (módulos), `src/ai/AGENTS.md` (pipeline ML).

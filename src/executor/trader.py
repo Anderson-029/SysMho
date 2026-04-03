@@ -343,10 +343,16 @@ class TradeExecutor:
 
         except Exception as e:
             err_str = str(e)
-            # ReduceOnly rechazado = posición ya cerrada en Binance → limpiar BD de todas formas
+            # ReduceOnly rechazado = la posición en Binance tiene un lado diferente al esperado.
+            # NO interpretar como "posición ya cerrada" — retornar False para que el monitor
+            # NO limpie la BD. El siguiente ciclo del monitor detectará el SIDE_MISMATCH
+            # y corregirá el lado antes de intentar el cierre nuevamente.
             if "-2022" in err_str or "ReduceOnly Order is rejected" in err_str:
-                _log(f"⚠️ {symbol}: ReduceOnly rechazado — la posición ya estaba cerrada en Binance. Sincronizando BD.")
-                return True
+                _log(
+                    f"❌ {symbol}: ReduceOnly rechazado — posición abierta en Binance con side "
+                    f"diferente al registrado en BD. BD no modificada. El monitor corregirá el mismatch."
+                )
+                return False
             _log(f"❌ FALLO CRÍTICO cerrando {symbol} en Binance: {e}")
             return False
 

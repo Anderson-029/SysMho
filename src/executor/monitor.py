@@ -97,6 +97,10 @@ class PositionMonitor:
 
         if official:
             # Caso A: Binance confirma posición activa — datos reales
+            # Verificar discrepancia de lado ANTES de operar con los datos
+            if official['side'] != pos['side']:
+                await self._correct_side_mismatch(pos, official)
+                return  # El próximo ciclo (1s) operará con los datos ya corregidos en BD
             current_price = official['mark_price']
             pnl_unrealized = official['pnl']
 
@@ -185,8 +189,60 @@ class PositionMonitor:
                 pos, current_price, pnl_unrealized, reason
             )
 
+    async def _correct_side_mismatch(
+        self, pos: Dict[str, Any], official: Dict[str, Any]
+    ) -> None:
+        """
+        Corrige una posición cuyo lado en la BD difiere del lado real en Binance.
+
+        Ocurre cuando el Motor estuvo detenido y Binance cerró la posición original
+        externamente (TP/SL hit) mientras alguien abría una posición nueva en dirección
+        opuesta directamente en Binance, sin pasar por SysMho.
+
+        Args:
+            pos: Registro de la posición tal como está en la BD local.
+            official: Datos reales de la posición en Binance.
+        """
+        symbol = pos['symbol']
+        _log(
+            f"⚠️ [SIDE_MISMATCH] {symbol}: BD={pos['side']} ≠ Binance={official['side']} — "
+            f"corrigiendo registro local..."
+        )
+        # Al invertir el lado, SL y TP también se invierten:
+        # el SL del SHORT es el TP del LONG (y viceversa).
+        # Si no se intercambian, el monitor disparará cierres falsos en el próximo ciclo.
+        new_sl = float(pos['take_profit']) if pos['take_profit'] else None
+        new_tp = float(pos['stop_loss']) if pos['stop_loss'] else None
+
+        async with self.db.pool.acquire() as conn:
+            await conn.execute(
+                """UPDATE positions SET
+                   side = $1,
+                   quantity = $2,
+                   entry_price = $3,
+                   pnl_unrealized = $4,
+                   stop_loss = $5,
+                   take_profit = $6,
+                   updated_at = NOW()
+                   WHERE id = $7
+                """,
+                official['side'],
+                official['quantity'],
+                official['entry_price'],
+                official['pnl'],
+                new_sl,
+                new_tp,
+                pos['id']
+            )
+        _log(
+            f"✅ [SIDE_MISMATCH] {symbol} corregida en BD: "
+            f"side={official['side']}, qty={official['quantity']:.4f}, "
+            f"entry={official['entry_price']:.6f}, "
+            f"SL={new_sl:.6f if new_sl else 'N/A'}, TP={new_tp:.6f if new_tp else 'N/A'}"
+        )
+
     async def _close_position(
-        self, pos: Dict[str, Any], close_price: float, 
+        self, pos: Dict[str, Any], close_price: float,
         final_pnl: float, reason: str
     ) -> None:
         """

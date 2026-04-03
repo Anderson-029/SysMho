@@ -53,6 +53,7 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 | `sysmho-migrate` | Applies SQL migrations safely and verifies they were applied correctly. Use when there are pending database migrations. | `.claude/skills/sysmho-migrate/SKILL.md` |
 | `sysmho-retrain` | Orchestrates safe XGBoost retraining — verifies data, backs up old model, retrains and validates metrics. Use when the model needs retraining. | `.claude/skills/sysmho-retrain/SKILL.md` |
 | `sysmho-cb-tune` | Analyzes trade history and suggests optimal Circuit Breaker thresholds with statistical evidence. Use when calibrating CB parameters. | `.claude/skills/sysmho-cb-tune/SKILL.md` |
+| `sysmho-model-eval` | Evaluates and compares current XGBoost model against previous backups — prediction metrics, confidence distribution, real win rate, and MEJORANDO/EMPEORANDO/ESTABLE verdict with evidence. Use when assessing model performance evolution. | `.claude/skills/sysmho-model-eval/skill_relacion_predicciones.md` |
 
 ### Development (6)
 
