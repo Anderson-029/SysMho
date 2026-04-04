@@ -19,8 +19,8 @@ SysMho es un sistema de trading algorítmico para futuros perpetuos en Binance. 
 ### Requisitos
 
 - Python 3.12+
-- PostgreSQL 12+
-- [uv](https://docs.astral.sh/uv/) o pip
+- [Docker](https://docs.docker.com/get-docker/) (PostgreSQL en contenedor; recomendado)
+- [uv](https://docs.astral.sh/uv/) o `pip`
 
 ### Instalación
 
@@ -33,6 +33,11 @@ cp .env.example .env
 
 # Instalar dependencias
 uv sync           # recomendado
+# alternativa: pip install -r requirements.txt
+
+# Base de datos (Docker) — detalle en "Base de datos"
+docker compose up -d
+uv run python scripts/setup_db.py
 ```
 
 ### Configurar `.env`
@@ -48,13 +53,16 @@ uv sync           # recomendado
 | `DB_PASSWORD` | No | Default: `postgres` |
 | `DB_NAME` | No | Default: `sysmho` |
 
-### Sincronizar BD (si trabajas en equipo)
+### Sincronizar BD (equipo / dump completo)
+
+El archivo `sysmho_full.sql` (~1 GB) no va en git. Copia el dump a `src/database/seed/sysmho_full.sql` (carpeta ignorada por git) y ejecuta:
 
 ```bash
-# Si descargaste sysmho_full.sql:
-psql -U postgres -c "CREATE DATABASE sysmho;"
-psql -U postgres -d sysmho -f sysmho_full.sql
+docker compose up -d
+uv run python scripts/setup_db.py --seed
 ```
+
+El script restaura el dump primero y luego aplica `schema.sql` y migraciones (idempotente). Ver `scripts/setup_db.py` y `src/database/AGENTS.md`.
 
 ### Iniciar
 
@@ -65,6 +73,37 @@ uv run uvicorn src.dashboard.api:app --host 0.0.0.0 --port 8000
 # Terminal 2: Motor IA
 uv run python -m src.main
 ```
+
+## Base de datos
+
+PostgreSQL corre en Docker (`docker-compose.yml`). Los datos persisten en el volumen nombrado del servicio salvo que ejecutes `docker compose down -v`.
+
+### Primera vez (solo esquema, sin dump)
+
+```bash
+docker compose up -d
+uv run python scripts/setup_db.py
+```
+
+### Uso habitual
+
+| Acción | Comando |
+|--------|---------|
+| Arrancar BD | `docker compose up -d` |
+| Parar BD | `docker compose down` |
+| Parar y **borrar datos** | `docker compose down -v` |
+| Logs | `docker compose logs -f postgres` |
+| psql dentro del contenedor | `docker exec -it sysmho-postgres psql -U postgres -d sysmho` |
+| Reaplicar esquema + migraciones | `uv run python scripts/setup_db.py` |
+
+### Archivos SQL
+
+| Archivo | Rol |
+|---------|-----|
+| `src/database/schema.sql` | DDL base e índices |
+| `src/database/migration_v14_9_0.sql` | Categorías de alerta + score |
+| `src/database/migration_v15_0_0.sql` | Índice en `model_performance` + deprecación v2 |
+| `src/database/migration_v15_2_0.sql` | Tablas `autonomous_decisions` y `meta_stats` |
 
 ## Arquitectura
 

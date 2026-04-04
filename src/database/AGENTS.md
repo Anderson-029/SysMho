@@ -107,4 +107,18 @@ ORDER BY minutes_ago DESC;
 | `migration_v15_0_0.sql` | Marks v2 models deprecated; adds index on `model_performance.model_name` |
 | `migration_v15_2_0.sql` | Creates `autonomous_decisions` and `meta_stats` tables |
 
-**How to apply**: Use the `sysmho-migrate` skill (`.claude/skills/sysmho-migrate/SKILL.md`) which guides safe application and verification. To apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
+**How to apply**: Use the cross-platform setup script: `uv run python scripts/setup_db.py` (applies schema + all migrations in order, idempotent). Alternatively, use the `sysmho-migrate` skill (`.claude/skills/sysmho-migrate/SKILL.md`) for guided application, or apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
+
+---
+
+## Docker Setup
+
+PostgreSQL runs in Docker via `docker-compose.yml` at the project root. Credentials come from `.env`.
+
+```bash
+docker compose up -d                      # start container
+uv run python scripts/setup_db.py         # apply schema + migrations
+uv run python scripts/setup_db.py --seed  # also load seed data from src/database/seed/
+```
+
+Seed data (`src/database/seed/sysmho_full.sql`) is git-ignored — must be placed manually. See `README.md` → "Database" for full instructions.
