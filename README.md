@@ -1,7 +1,7 @@
 # SysMho v15.2.0 — Sistema de Trading Autónomo
 
 > Bot de trading algorítmico en Binance Futures con IA (XGBoost v3, 27 features).
-> **Estado:** ✅ Operacional | **Última actualización:** Abril 3, 2026
+> **Estado:** Operacional | **Última actualización:** Abril 4, 2026
 
 ## ¿Qué es SysMho?
 
@@ -11,90 +11,160 @@ SysMho es un sistema de trading algorítmico para futuros perpetuos en Binance. 
 - **Manual**: Cada señal requiere aprobación humana via dashboard.
 - **Autónomo**: MetaEvaluador puntúa estadísticamente y decide automáticamente. CircuitBreaker como red de seguridad.
 
-**Portfolio**: BTC, ETH, BNB, SOL, XRP, ADA, AVAX, LINK, DOT, POL — todos /USDT futuros perpetuos.
+**Portfolio**: BTC, ETH, BNB, SOL, XRP, ADA, AVAX, LINK, DOT, POL — todos /USDT futuros perpetuos.  
 **Timeframes**: 5m (predicción principal) + 1h, 4h (contexto macro).
+
+---
+
+## Arquitectura
+
+```
+PostgreSQL (nativo o Docker)
+    │
+    ├── engine  (uv run engine)       ← AI + Trading + Learning
+    │       │
+    │       └── runtime_state.json    ← IPC compartido
+    │       └── sysmho_brain.log      ← telemetría
+    │
+    └── dashboard (uv run dashboard)  ← API REST + Frontend, puerto 8000
+```
+
+| Proceso | Entry Point | Comando | Env |
+|---------|------------|---------|-----|
+| AI Engine | `src/main.py` | `uv run engine` | `.env` |
+| Dashboard | `src/dashboard/api.py` | `uv run dashboard` | `.env` |
+
+La base de datos puede ser PostgreSQL nativo (instalado en el sistema) o un contenedor Docker. Engine y Dashboard siempre corren localmente via `uv`.
+
+---
 
 ## Inicio Rápido
 
 ### Requisitos
 
 - Python 3.12+
-- [Docker](https://docs.docker.com/get-docker/) (PostgreSQL en contenedor; recomendado)
-- [uv](https://docs.astral.sh/uv/) o `pip`
+- [uv](https://docs.astral.sh/uv/) (gestor de paquetes)
+- PostgreSQL 15+ (nativo **o** Docker)
 
-### Instalación
-
-```bash
-# Clonar y entrar
-git clone <repo-url> && cd SysMho
-
-# Copiar archivo de configuración
-cp .env.example .env
-
-# Instalar dependencias
-uv sync           # recomendado
-# alternativa: pip install -r requirements.txt
-
-# Base de datos (Docker) — detalle en "Base de datos"
-docker compose up -d
-uv run python scripts/setup_db.py
-```
-
-### Configurar `.env`
-
-| Variable | Requerida | Descripción |
-|----------|-----------|-------------|
-| `BINANCE_API_KEY` | Sí | Clave API Binance Futures |
-| `BINANCE_SECRET_KEY` | Sí | Secreto Binance Futures |
-| `BINANCE_TESTNET` | Sí | `True` testnet, `False` mainnet |
-| `DB_HOST` | No | Default: `localhost` |
-| `DB_PORT` | No | Default: `5432` |
-| `DB_USER` | No | Default: `postgres` |
-| `DB_PASSWORD` | No | Default: `postgres` |
-| `DB_NAME` | No | Default: `sysmho` |
-
-### Sincronizar BD (equipo / dump completo)
-
-El archivo `sysmho_full.sql` (~1 GB) no va en git. Copia el dump a `src/database/seed/sysmho_full.sql` (carpeta ignorada por git) y ejecuta:
+### Primera vez — Opción A: PostgreSQL nativo (recomendado)
 
 ```bash
-docker compose up -d
-uv run python scripts/setup_db.py --seed
+# 1. Instalar dependencias
+uv sync
+
+# 2. Crear .env desde la plantilla
+cp .env.example .env     # editar claves Binance, BD y parámetros
+
+# 3. Verificar que PostgreSQL está corriendo
+uv run db-start
+
+# 4. Aplicar schema + migraciones
+uv run db-migrate
+
+# 5. (Opcional) Cargar datos históricos
+# Copiar sysmho_full.sql a src/database/seed/sysmho_full.sql
+# uv run db-seed
+
+# 6. Iniciar procesos
+uv run engine       # Terminal 1: Motor IA
+uv run dashboard    # Terminal 2: Dashboard → http://localhost:8000
 ```
 
-El script restaura el dump primero y luego aplica `schema.sql` y migraciones (idempotente). Ver `scripts/setup_db.py` y `src/database/AGENTS.md`.
-
-### Iniciar
+### Primera vez — Opción B: PostgreSQL en Docker
 
 ```bash
-# Terminal 1: Dashboard (http://localhost:8000)
-uv run uvicorn src.dashboard.api:app --host 0.0.0.0 --port 8000
+# 1. Instalar dependencias
+uv sync
 
-# Terminal 2: Motor IA
-uv run python -m src.main
+# 2. Crear .env desde la plantilla
+cp .env.example .env     # editar claves Binance, BD y parámetros
+
+# 3. Iniciar contenedor PostgreSQL
+uv run db-start-docker
+
+# 4. Aplicar schema + migraciones (via docker exec)
+uv run db-migrate-docker
+
+# 5. (Opcional) Cargar datos históricos
+# Copiar sysmho_full.sql a src/database/seed/sysmho_full.sql
+# uv run db-seed-docker
+
+# 6. Iniciar procesos
+uv run engine       # Terminal 1: Motor IA
+uv run dashboard    # Terminal 2: Dashboard → http://localhost:8000
 ```
+
+> **Runs siguientes**: solo verificar BD (`uv run db-start` o `uv run db-status-docker`) y lanzar engine + dashboard.
+
+---
+
+## Comandos de gestión
+
+Todos los comandos son entry points de `pyproject.toml`, invocados via `uv run <nombre>`.
+
+### Base de datos — local (PostgreSQL nativo)
+
+| Comando | Descripción |
+|---------|-------------|
+| `uv run db-start` | Verificar que PostgreSQL nativo es alcanzable |
+| `uv run db-stop` | Instrucciones para detener PostgreSQL nativo |
+| `uv run db-status` | Versión de PG + conteo de tablas via asyncpg |
+| `uv run db-migrate` | Aplicar schema.sql + migraciones via asyncpg |
+| `uv run db-seed` | Cargar seed data via psql local. Opcional: `--file <path>` |
+| `uv run db-backup` | Dump BD via pg_dump local + copiar modelos |
+
+### Base de datos — Docker
+
+| Comando | Descripción |
+|---------|-------------|
+| `uv run db-start-docker` | Iniciar contenedor sysmho-postgres |
+| `uv run db-stop-docker` | Detener contenedor |
+| `uv run db-status-docker` | Estado del contenedor + conectividad PG |
+| `uv run db-migrate-docker` | Aplicar schema + migraciones via docker exec psql |
+| `uv run db-seed-docker` | Cargar seed via docker exec psql. Opcional: `--file <path>` |
+| `uv run db-backup-docker` | Dump via docker exec pg_dump + copiar modelos |
+
+### Aplicación
+
+| Comando | Descripción |
+|---------|-------------|
+| `uv run engine` | Iniciar motor de IA (`src/main.py`) |
+| `uv run dashboard` | Iniciar dashboard (uvicorn en puerto 8000) |
+| `uv run test` | Ejecutar test suite (acepta argumentos extra de pytest) |
+
+---
+
+## Archivo de entorno
+
+Un solo `.env` en la raíz del repo (no commiteado). Plantilla: `cp .env.example .env`. Valores por defecto (`DB_HOST=localhost`) son para desarrollo local.
+
+Incluye: claves Binance, `DB_*`, CB/Meta, `AUTONOMOUS_MODE`, `LEARNING_LOOP_SECONDS`, `DASHBOARD_API_KEY`, etc.
+
+---
 
 ## Base de datos
 
-PostgreSQL corre en Docker (`docker-compose.yml`). Los datos persisten en el volumen nombrado del servicio salvo que ejecutes `docker compose down -v`.
-
-### Primera vez (solo esquema, sin dump)
-
-```bash
-docker compose up -d
-uv run python scripts/setup_db.py
-```
-
-### Uso habitual
+### Comandos rápidos (local)
 
 | Acción | Comando |
 |--------|---------|
-| Arrancar BD | `docker compose up -d` |
-| Parar BD | `docker compose down` |
-| Parar y **borrar datos** | `docker compose down -v` |
-| Logs | `docker compose logs -f postgres` |
-| psql dentro del contenedor | `docker exec -it sysmho-postgres psql -U postgres -d sysmho` |
-| Reaplicar esquema + migraciones | `uv run python scripts/setup_db.py` |
+| Verificar BD | `uv run db-start` |
+| Aplicar schema+migraciones | `uv run db-migrate` |
+| Cargar seed data | `uv run db-seed` |
+| Estado de BD | `uv run db-status` |
+| Backup completo | `uv run db-backup` |
+| psql interactivo | `psql $DATABASE_URL` |
+
+### Comandos rápidos (Docker)
+
+| Acción | Comando |
+|--------|---------|
+| Iniciar BD | `uv run db-start-docker` |
+| Aplicar schema+migraciones | `uv run db-migrate-docker` |
+| Cargar seed data | `uv run db-seed-docker` |
+| Estado de BD | `uv run db-status-docker` |
+| Detener BD | `uv run db-stop-docker` |
+| Backup completo | `uv run db-backup-docker` |
 
 ### Archivos SQL
 
@@ -105,7 +175,27 @@ uv run python scripts/setup_db.py
 | `src/database/migration_v15_0_0.sql` | Índice en `model_performance` + deprecación v2 |
 | `src/database/migration_v15_2_0.sql` | Tablas `autonomous_decisions` y `meta_stats` |
 
-## Arquitectura
+---
+
+## Backup y Restore
+
+```bash
+# Crear backup completo (BD + modelos)
+uv run db-backup            # PostgreSQL nativo
+uv run db-backup-docker     # PostgreSQL en Docker
+
+# Restore BD (local)
+psql $DATABASE_URL < backups/sysmho_20260404_150000.sql
+
+# Restore BD (Docker)
+docker exec -i sysmho-postgres psql -U postgres -d sysmho < backups/sysmho_20260404_150000.sql
+```
+
+Los backups se guardan en `backups/` (gitignoreado). No hay limpieza automática.
+
+---
+
+## Arquitectura Interna
 
 ```
 Binance (WebSocket + REST)
@@ -131,9 +221,7 @@ XGBoost v3 (SELL / WAIT / BUY)
     SelfLearner → meta_stats.json
 ```
 
-**Dos procesos independientes** se comunican via PostgreSQL y `src/runtime_state.json`:
-- **Motor IA** — Datos, predicción, ejecución, monitoreo
-- **Dashboard** — API REST + interfaz web
+---
 
 ## Reentrenar Modelo
 
@@ -145,17 +233,20 @@ uv run python -m src.ai.trainer --symbol ALL --timeframe 5m
 uv run python -m src.ai.trainer --symbol ALL --timeframe 5m --tune --trials 50
 ```
 
-Si cambias features en `src/constants.py`, elimina el modelo antes:
-```bash
-rm src/ai/models/xgboost_v1.joblib
-```
+Si cambias features en `src/constants.py`, elimina el modelo antes de reentrenar.
+
+---
 
 ## Tests
 
 ```bash
-uv run pytest          # suite completa (50+ tests)
-uv run pytest -x -v    # parar en primer fallo
+uv run test              # suite completa (50+ tests)
+uv run test -x -v        # parar en primer fallo
 ```
+
+Tests corren en el host. `tests/conftest.py` usa `load_dotenv(".env")` para conectar a postgres en localhost (puerto 5432).
+
+---
 
 ## Modo Autónomo
 
@@ -167,6 +258,8 @@ Controlado via dashboard (sin reinicio):
 | **CircuitBreaker** | 5 stops duros: max posiciones (3), trades/día (8), pérdidas consecutivas (3), límite diario (4%), semanal (8%). |
 | **SelfLearner** | Actualiza `meta_stats.json` por trade cerrado. Base para futuro meta-modelo XGBoost. |
 
+---
+
 ## Configuración Clave (`src/constants.py`)
 
 | Parámetro | Valor | Descripción |
@@ -176,54 +269,47 @@ Controlado via dashboard (sin reinicio):
 | `NORMAL_RISK_PER_TRADE` | 0.02 | 2% capital en riesgo por trade |
 | `NORMAL_ATR_SL` / `NORMAL_ATR_TP` | 1.5 / 3.0 | SL a 1.5x ATR, TP a 3.0x ATR |
 | `NOTIONAL_CAP_RATIO` | 0.12 | Max 12% capital por trade |
-| `EXPOSURE_LIMIT_RATIO` | 0.50 | Bloquea si exposición total > 50% |
 | `META_SCORE_THRESHOLD` | 0.52 | Umbral aprobación MetaEvaluador |
+
+---
 
 ## Migrar a Mainnet
 
 1. Crear claves API Binance Futures con permisos de trading
-2. Actualizar `.env`: `BINANCE_TESTNET=False` + claves reales
-3. Reiniciar SysMho
+2. Editar `.env`: `BINANCE_TESTNET=False` + claves reales
+3. Reiniciar engine y dashboard
 
 Los recolectores de datos ya usan mainnet (endpoints públicos). Solo `trader.py` respeta `BINANCE_TESTNET`.
 
-## Skills Agenticas
+---
 
-Este proyecto usa Skills agenticas para desarrollo asistido. Ver `AGENTS.md` para el router universal, índice de skills y protocolo de mantenimiento.
+## Skills Agénticas
+
+Este proyecto usa Skills agénticas para desarrollo asistido. Ver `AGENTS.md` para el router universal, índice de skills y protocolo de mantenimiento.
+
+---
 
 ## Historial de Versiones
 
-### v15.2.0 (2026-04-03) — Estable actual
-**Phase 8 — Correcciones de Coherencia BD vs Binance:**
-- ✅ Fix side mismatch: detecta y corrige sides invertidos entre BD y Binance
-- ✅ Fix error -2022: ReduceOnly retorna False (evita posiciones zombie)
-- ✅ Fix startup: _startup_reconciliation() reconcilia BD vs Binance al arrancar
-- ✅ Fix portfolio: sync_wallet_from_exchange() UPDATE no-incremental
+### v15.2.0 (2026-04-04) — Estable actual
 
-**Phase 9 — Reentrenamiento Optuna:**
-- Modelo anterior: 26.1 MB, overfitting severo (35.6% confianza >0.90)
-- Modelo nuevo: 8.8 MB, regularización óptima (max_depth=5, gamma=0.059)
-- Resultados: 87.5% accuracy hold-out, 68.3% win rate real
+**Phase 10 — Docker-first Architecture:**
+- 3 servicios Docker: postgres, engine, dashboard (`scripts/setup_db.py` manual para DDL)
+- `src/paths.py`: rutas centralizadas, compatible local y Docker
+- Single `.env` for all services (template: `.env.example`)
+- Engine heartbeat para healthcheck Docker
+- `scripts/sysmho.py`: gestión cross-platform (start/stop/status/logs/setup/backup)
+- Volumen compartido `sysmho_data` para IPC entre engine y dashboard
 
-**Phase 9.1 — Evaluación Relacional:**
-- Skill `sysmho-model-eval`: compara versiones, emite MEJORANDO/EMPEORANDO/ESTABLE
-- sysmho_full.sql: dump completo para sincronización de equipo
+**Phase 8-9 — Correcciones y Reentrenamiento:**
+- Fix side mismatch, ReduceOnly, startup reconciliation, portfolio sync
+- Modelo reentrenado con Optuna: 87.5% accuracy, 68.3% win rate real
 
 ### v15.1.0 (2026-03-29)
 - Ejecución end-to-end verificada en Binance testnet
-- Telemetría de órdenes en real-time
 
 ### v15.0.0 (2026-03-29)
 - Pipeline ML rediseñado: 27 features limpios, todos normalizados
-- TimeSeriesSplit 5-fold validation
-
-## Roadmap
-
-1. Verificación Binance para mainnet trading
-2. Acumular 200+ trades autónomos en testnet para entrenamiento de meta-modelo
-3. Calibrar CircuitBreaker con resultados de testnet
-4. Entrenar meta-modelo XGBoost en `meta_stats.json` (Phase 10)
-5. Labeling adaptativo ATR en lugar de umbral fijo 0.7%
 
 ---
 

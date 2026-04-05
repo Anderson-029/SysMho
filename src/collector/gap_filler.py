@@ -15,7 +15,6 @@ Flujo:
 """
 
 import asyncio
-import os
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -24,6 +23,7 @@ import ccxt.async_support as ccxt
 
 from src.database.repository import DatabaseRepository
 from src.runtime_config import set_sync_status
+from src.paths import BRAIN_LOG as _BRAIN_LOG
 
 # Timeframes que SysMho necesita completos
 TIMEFRAMES = ['5m', '1h', '4h']
@@ -36,12 +36,6 @@ BATCH_LIMIT = 1000
 
 # Pausa entre requests para respetar rate limit (ms → s)
 RATE_LIMIT_SLEEP = 0.25
-
-# Log al brain.log
-_BRAIN_LOG = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'sysmho_brain.log'
-)
 
 
 def _log(msg: str) -> None:

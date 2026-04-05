@@ -11,8 +11,11 @@ build/
 venv/
 .venv/
 
-# Environment variables
+# Env files (contain secrets)
 .env
+
+# Backups (generated locally)
+backups/
 
 # Logs
 *.log
@@ -33,7 +36,9 @@ Thumbs.db
 # Database seed data (too large for git — added manually)
 src/database/seed/
 
-# uv
-uv.lock
-sysmho_full.sql
+# Runtime state (generated at runtime — do not commit)
+src/runtime_state.json
+src/engine_heartbeat
+src/ai/models/meta_stats.json
+
 sysmho_full.sql

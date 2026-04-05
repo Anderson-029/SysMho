@@ -11,6 +11,9 @@ Sistema de alertas:
               tendencias 5m/1h/4h alineadas y R/R ≥ 3).
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import asyncio
 import builtins
 import os
@@ -43,12 +46,11 @@ from src.risk.manager import RiskManager
 # AUTONOMOUS_MODE ya NO es una constante fija — se lee en runtime desde
 # runtime_state.json para que el dashboard pueda togglarlo sin reiniciar.
 from src.runtime_config import is_autonomous, set_autonomous, set_last_scan_at
+from src.paths import BRAIN_LOG, ENGINE_HEARTBEAT
 LEARNING_LOOP_SECONDS = int(os.getenv('LEARNING_LOOP_SECONDS', '60'))
 
 # --- INTERCEPTOR DE PENSAMIENTO (Para el Dashboard Web) ---
-log_file_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "sysmho_brain.log"
-)
+log_file_path = BRAIN_LOG
 with open(log_file_path, 'a', encoding='utf-8') as f:
     f.write("🧠 SysMho: Sistema Neuronal Iniciado...\n")
 
@@ -308,6 +310,7 @@ class AutonomousBot:
 
         if not candidates:
             print(f"[{time_str}] 📊 [5M SCAN] Todos los activos en WAIT.")
+            open(ENGINE_HEARTBEAT, 'w').close()
             return
 
         candidates.sort(key=lambda x: x[1].get('score', 0.0), reverse=True)
@@ -327,6 +330,8 @@ class AutonomousBot:
         )
         for sym, data in top:
             await self._store_signal(sym, data, alert_category='REGULAR')
+
+        open(ENGINE_HEARTBEAT, 'w').close()
 
     # ------------------------------------------------------------------ #
     #  BOUNTY WATCHER — ALTA CONVICCIÓN SIN HORARIO                      #
@@ -863,7 +868,12 @@ class AutonomousBot:
             for task in asyncio.all_tasks(loop):
                 task.cancel()
 
-        loop.add_signal_handler(signal.SIGINT, _shutdown_handler)
+        try:
+            loop.add_signal_handler(signal.SIGINT, _shutdown_handler)
+        except NotImplementedError:
+            print("⚠️ [STARTUP] Registro de señal SIGINT no soportado por este event loop; se usará KeyboardInterrupt por defecto.")
+        except Exception:
+            raise
 
         tasks = [
             asyncio.create_task(self._continuous_signal_scanner()),

@@ -6,7 +6,6 @@ auditadas e inserta el registro transaccional exacto
 (fees, notional efectivo, price slip) en la base de datos.
 """
 
-import os
 import time
 from typing import Dict, Any, Optional
 
@@ -19,11 +18,7 @@ from config.settings import (
 )
 from src.constants import MIN_NOTIONAL_USDT
 from src.database.repository import DatabaseRepository
-
-_BRAIN_LOG = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "sysmho_brain.log"
-)
+from src.paths import BRAIN_LOG as _BRAIN_LOG
 
 
 def _log(msg: str) -> None:

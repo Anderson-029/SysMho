@@ -8,17 +8,12 @@ Expone endpoints para:
   - Estadísticas del SelfLearner
 """
 
-import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 
 from src.dashboard.deps import db
 from src.runtime_config import is_autonomous, set_autonomous, reset_circuit_breaker
-
-_BRAIN_LOG = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    'sysmho_brain.log'
-)
+from src.paths import BRAIN_LOG as _BRAIN_LOG
 
 def _log(msg: str) -> None:
     ts = datetime.now(timezone.utc).strftime('%H:%M:%S')

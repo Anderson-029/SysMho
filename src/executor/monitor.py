@@ -8,17 +8,12 @@ detecta un riesgo inminente de liquidación.
 """
 
 import asyncio
-import os
 import time
 from typing import Dict, Any
 
 from src.database.repository import DatabaseRepository
 from src.constants import BINANCE_FUTURES_TAKER_FEE
-
-_BRAIN_LOG = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "sysmho_brain.log"
-)
+from src.paths import BRAIN_LOG as _BRAIN_LOG
 
 
 def _log(msg: str) -> None:

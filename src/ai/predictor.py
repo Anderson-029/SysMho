@@ -31,8 +31,8 @@ class ModelPredictor:
 
     def __init__(self) -> None:
         """Inicializa el predictor cargando el modelo en memoria."""
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.model_path = os.path.join(base_dir, 'models', 'xgboost_v1.joblib')
+        from src.paths import MODEL_PATH
+        self.model_path = MODEL_PATH
         self.model = None
         self.features: Optional[list] = None
         self._load_model()

@@ -14,9 +14,7 @@ Si el archivo no existe o está corrupto, se usan los valores de .env.
 import json
 import os
 
-_STATE_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), 'runtime_state.json'
-)
+from src.paths import RUNTIME_STATE as _STATE_PATH
 
 
 def _load() -> dict:

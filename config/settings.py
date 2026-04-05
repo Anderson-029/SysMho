@@ -1,15 +1,12 @@
 """
 SysMho — Configuración Centralizada.
 
-Carga las variables de entorno desde el archivo .env y expone
-las constantes de configuración para todo el sistema.
+Pure env var reader — no load_dotenv here.
+Each entry point calls load_dotenv() before importing this module,
+which loads the single .env file at the project root.
 """
 
 import os
-from dotenv import load_dotenv
-
-# Carga las variables del .env
-load_dotenv()
 
 # ============================================================
 # Binance Configuration

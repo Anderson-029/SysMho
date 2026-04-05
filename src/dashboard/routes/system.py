@@ -141,16 +141,13 @@ async def get_sync_status():
 @router.get("/logs")
 async def get_logs(limit: int = 500):
     """Lee el pensamiento táctico y neuronal en vivo."""
-    log_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-        "sysmho_brain.log"
-    )
+    from src.paths import BRAIN_LOG
     
-    if not os.path.exists(log_path):
+    if not os.path.exists(BRAIN_LOG):
         return {"logs": ["🧠 SysMho: Dormido. Esperando ignición..."]}
         
     try:
-        with open(log_path, "r", encoding="utf-8") as f:
+        with open(BRAIN_LOG, "r", encoding="utf-8") as f:
             lines = f.readlines()
             return {"logs": [line.strip() for line in lines[-limit:]]}
     except Exception as e:

@@ -49,14 +49,11 @@ class BacktestEngine:
         """Carga el modelo XGBoost en memoria."""
         import os
         import joblib
-        model_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'models', 'xgboost_v1.joblib'
-        )
-        if not os.path.exists(model_path):
+        from src.paths import MODEL_PATH
+        if not os.path.exists(MODEL_PATH):
             print("❌ Modelo no encontrado. Entrena primero con: python -m src.ai.trainer")
             sys.exit(1)
-        self._model, self._features = joblib.load(model_path)
+        self._model, self._features = joblib.load(MODEL_PATH)
         print(f"✅ Modelo cargado — {len(self._features)} features")
 
     def _batch_predict(self, df: pd.DataFrame) -> pd.DataFrame:
