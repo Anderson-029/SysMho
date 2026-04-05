@@ -270,7 +270,7 @@ class TradeExecutor:
                         'pnl': float(pos.get('unrealizedPnl', 0.0)),
                         'mark_price': float(pos.get('markPrice', 0.0)),
                         'entry_price': float(pos.get('entryPrice', 0.0)),
-                        'leverage': float(pos.get('leverage', 1.0)),
+                        'leverage': float(pos.get('leverage') or 1.0),
                         'side': 'BUY' if amt > 0 else 'SELL',
                         'quantity': abs(amt),
                         'collateral': float(pos.get('initialMargin', 0.0))

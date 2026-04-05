@@ -24,49 +24,60 @@ class TechnicalIndicators:
             DataFrame con las nuevas columnas calculadas.
         """
         df = df.copy()
+        if len(df) < 14:
+            for col in [
+                'rsi_14', 'macd', 'macd_diff', 'bb_pband',
+                'ema_21', 'ema_200', 'atr_14', 'vwap',
+                'adx', 'adx_pos', 'stoch_rsi_k',
+            ]:
+                df[col] = float("nan")
+            return df
 
-        # 1. RSI (Relative Strength Index)
-        df['rsi_14'] = ta.momentum.rsi(df['close'], window=14)
+        try:
+            # 1. RSI (Relative Strength Index)
+            df['rsi_14'] = ta.momentum.rsi(df['close'], window=14)
 
-        # 2. MACD (Moving Average Convergence Divergence)
-        macd = ta.trend.MACD(df['close'])
-        df['macd'] = macd.macd()
-        df['macd_diff'] = macd.macd_diff()
+            # 2. MACD (Moving Average Convergence Divergence)
+            macd = ta.trend.MACD(df['close'])
+            df['macd'] = macd.macd()
+            df['macd_diff'] = macd.macd_diff()
 
-        # 3. Bollinger Bands
-        bollinger = ta.volatility.BollingerBands(
-            df['close'], window=20, window_dev=2
-        )
-        # Posición del precio respecto a las bandas (0 a 1)
-        df['bb_pband'] = bollinger.bollinger_pband()
+            # 3. Bollinger Bands
+            bollinger = ta.volatility.BollingerBands(
+                df['close'], window=20, window_dev=2
+            )
+            # Posición del precio respecto a las bandas (0 a 1)
+            df['bb_pband'] = bollinger.bollinger_pband()
 
-        # 4. Medias Móviles Exponenciales (EMAs usadas como features o intermedias)
-        df['ema_21'] = ta.trend.ema_indicator(df['close'], window=21)
-        df['ema_200'] = ta.trend.ema_indicator(df['close'], window=200)
+            # 4. Medias Móviles Exponenciales (EMAs usadas como features o intermedias)
+            df['ema_21'] = ta.trend.ema_indicator(df['close'], window=21)
+            df['ema_200'] = ta.trend.ema_indicator(df['close'], window=200)
 
-        # 5. ATR (Average True Range)
-        df['atr_14'] = ta.volatility.average_true_range(
-            df['high'], df['low'], df['close'], window=14
-        )
+            # 5. ATR (Average True Range)
+            df['atr_14'] = ta.volatility.average_true_range(
+                df['high'], df['low'], df['close'], window=14
+            )
 
-        # 6. VWAP (Volume Weighted Average Price)
-        vwap = ta.volume.VolumeWeightedAveragePrice(
-            high=df['high'], low=df['low'], close=df['close'],
-            volume=df['volume'], window=14
-        )
-        df['vwap'] = vwap.volume_weighted_average_price()
+            # 6. VWAP (Volume Weighted Average Price)
+            vwap = ta.volume.VolumeWeightedAveragePrice(
+                high=df['high'], low=df['low'], close=df['close'],
+                volume=df['volume'], window=14
+            )
+            df['vwap'] = vwap.volume_weighted_average_price()
 
-        # 7. ADX (Average Directional Index)
-        adx = ta.trend.ADXIndicator(
-            high=df['high'], low=df['low'], close=df['close'], window=14
-        )
-        df['adx'] = adx.adx()
-        df['adx_pos'] = adx.adx_pos()  # Fuerza alcista
+            # 7. ADX (Average Directional Index)
+            adx = ta.trend.ADXIndicator(
+                high=df['high'], low=df['low'], close=df['close'], window=14
+            )
+            df['adx'] = adx.adx()
+            df['adx_pos'] = adx.adx_pos()  # Fuerza alcista
 
-        # 8. StochRSI (Stochastic RSI)
-        stoch_rsi = ta.momentum.StochRSIIndicator(
-            close=df['close'], window=14, smooth1=3, smooth2=3
-        )
-        df['stoch_rsi_k'] = stoch_rsi.stochrsi_k()
+            # 8. StochRSI (Stochastic RSI)
+            stoch_rsi = ta.momentum.StochRSIIndicator(
+                close=df['close'], window=14, smooth1=3, smooth2=3
+            )
+            df['stoch_rsi_k'] = stoch_rsi.stochrsi_k()
+        except Exception:
+            raise
 
         return df

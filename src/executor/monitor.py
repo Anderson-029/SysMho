@@ -233,7 +233,8 @@ class PositionMonitor:
             f"✅ [SIDE_MISMATCH] {symbol} corregida en BD: "
             f"side={official['side']}, qty={official['quantity']:.4f}, "
             f"entry={official['entry_price']:.6f}, "
-            f"SL={new_sl:.6f if new_sl else 'N/A'}, TP={new_tp:.6f if new_tp else 'N/A'}"
+            f"SL={f'{new_sl:.6f}' if new_sl is not None else 'N/A'}, "
+            f"TP={f'{new_tp:.6f}' if new_tp is not None else 'N/A'}"
         )
 
     async def _close_position(
