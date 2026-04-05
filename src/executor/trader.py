@@ -51,7 +51,7 @@ class TradeExecutor:
             }
         })
         if BINANCE_TESTNET:
-            self.exchange.set_sandbox_mode(True)
+            self.exchange.enable_demo_trading(True)
 
         self.db = db if db else DatabaseRepository()
         self._api_status: str = "UNKNOWN"
