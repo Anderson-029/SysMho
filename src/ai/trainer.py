@@ -6,6 +6,9 @@ y los submódulos especializados (`SequentialTrainer`, `BayesianTuner`).
 Mantiene la misma interfaz original para no romper dependencias.
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import argparse
 import asyncio
 import os

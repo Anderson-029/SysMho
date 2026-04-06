@@ -79,6 +79,8 @@ class SequentialTrainer(BaseTrainer):
             )
 
             # 4. Cargar modelo previo (de iteración anterior o disco)
+            # Agregar parámetros por defecto necesarios para XGBoost 3.2.0
+            xgb_params = {**best_params, 'random_state': 42, 'verbosity': 0}
             if model is None:
                 if os.path.exists(self.model_path):
                     try:
@@ -89,12 +91,12 @@ class SequentialTrainer(BaseTrainer):
                                 "⚠️ Desajuste de variables detectado. "
                                 "Iniciando modelo desde cero con nuevas features..."
                             )
-                            model = xgb.XGBClassifier(**best_params)
+                            model = xgb.XGBClassifier(**xgb_params)
                     except Exception as e:
                         print(f"⚠️ Error cargando modelo: {e}")
-                        model = xgb.XGBClassifier(**best_params)
+                        model = xgb.XGBClassifier(**xgb_params)
                 else:
-                    model = xgb.XGBClassifier(**best_params)
+                    model = xgb.XGBClassifier(**xgb_params)
 
             # 5. Validación cruzada temporal (TimeSeriesSplit 5 folds)
             # Respeta el orden cronológico — nunca entrena con datos futuros.
@@ -111,7 +113,7 @@ class SequentialTrainer(BaseTrainer):
                 # Pesos de clase balanceados (compensa 85% WAIT → ~33% cada clase)
                 weights_fold = compute_sample_weight('balanced', y_tr)
 
-                temp_model = xgb.XGBClassifier(**best_params)
+                temp_model = xgb.XGBClassifier(**xgb_params)
                 await loop.run_in_executor(
                     None,
                     functools.partial(temp_model.fit, X_tr, y_tr, sample_weight=weights_fold)
