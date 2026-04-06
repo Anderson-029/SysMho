@@ -1,6 +1,9 @@
 # AGENTS.md — src/dashboard/
 
-> Parent context: `src/AGENTS.md` → `AGENTS.md` (root)
+> **Navigation:** `CLAUDE.md` (manifest) → `AGENTS.md` (skills index) → `src/AGENTS.md` (module architecture) → This file (API & frontend)
+>
+> **When to read:** Building or modifying API endpoints, authentication, frontend features, or dashboard integrations.
+> **Loading strategy:** On-demand — loaded only when you need dashboard/API context (not preloaded).
 
 ---
 

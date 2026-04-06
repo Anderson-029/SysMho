@@ -1,6 +1,9 @@
 # AGENTS.md — src/ Module Architecture
 
-> Parent context: `AGENTS.md` (workspace root)
+> **Navigation:** Start at `CLAUDE.md` (manifest) → `AGENTS.md` (skills index) → This file (module architecture)
+>
+> **When to read:** Understanding SysMho's internal structure, module dependencies, entry points, and cross-cutting concerns.
+> **Loading strategy:** On-demand — loaded only when exploring how modules interact (not preloaded in every conversation).
 
 ---
 

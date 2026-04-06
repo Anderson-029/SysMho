@@ -1,6 +1,9 @@
 # AGENTS.md — src/ai/
 
-> Parent context: `src/AGENTS.md` → `AGENTS.md` (root)
+> **Navigation:** `CLAUDE.md` (manifest) → `AGENTS.md` (skills index) → `src/AGENTS.md` (module architecture) → This file (ML pipeline)
+>
+> **When to read:** Working with XGBoost model, training pipeline, MetaEvaluator logic, or SelfLearner statistics. Also see `src/ai/MODELS.md` for brain architecture.
+> **Loading strategy:** On-demand — loaded only when you need ML context (not preloaded).
 
 ---
 

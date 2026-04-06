@@ -1,6 +1,9 @@
 # AGENTS.md — src/database/
 
-> Parent context: `src/AGENTS.md` → `AGENTS.md` (root)
+> **Navigation:** `CLAUDE.md` (manifest) → `AGENTS.md` (skills index) → `src/AGENTS.md` (module architecture) → This file (DB schema)
+>
+> **When to read:** Working with database schema, migrations, queries, or integrating new data tables.
+> **Loading strategy:** On-demand — loaded only when you need database context (not preloaded).
 
 ---
 
