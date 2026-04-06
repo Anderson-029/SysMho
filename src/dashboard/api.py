@@ -5,6 +5,9 @@ Punto de entrada principal para el Dashboard (Backend).
 Monta los sub-routers divididos lógicamente y gestiona recursos globales.
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 from contextlib import asynccontextmanager
 

@@ -95,15 +95,19 @@ def test_settings_validates_api_keys():
 # ================================================================
 
 def test_version_banner_matches_constant():
-    """El banner en start_sysmho.sh debe mostrar la versión de constants.py."""
+    """README y pyproject.toml deben coincidir con SYSMHO_VERSION (flujo uv)."""
     from src.constants import SYSMHO_VERSION
 
-    with open("start_sysmho.sh", "r", encoding="utf-8") as f:
-        content = f.read()
+    with open("README.md", "r", encoding="utf-8") as f:
+        readme = f.read()
+    with open("pyproject.toml", "r", encoding="utf-8") as f:
+        pyproject = f.read()
 
-    assert f"V{SYSMHO_VERSION}" in content, (
-        f"start_sysmho.sh no muestra V{SYSMHO_VERSION}. "
-        "Sincronizar el banner con SYSMHO_VERSION en constants.py."
+    assert f'version = "{SYSMHO_VERSION}"' in pyproject, (
+        f'pyproject.toml debe declarar version = "{SYSMHO_VERSION}".'
+    )
+    assert f"v{SYSMHO_VERSION}".lower() in readme.lower(), (
+        f"README.md debe incluir la versión v{SYSMHO_VERSION} (misma que constants.py)."
     )
 
 

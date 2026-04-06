@@ -20,10 +20,10 @@
 
 ## Entry Points
 
-| Process | File | Command |
-|---------|------|---------|
-| AI Engine | `src/main.py` | `uv run python -m src.main` |
-| Dashboard | `src/dashboard/api.py` | `uv run uvicorn src.dashboard.api:app --host 0.0.0.0 --port 8000` |
+| Process | File | Command | Env file loaded |
+|---------|------|---------|-----------------|
+| AI Engine | `src/main.py` | `uv run engine` | `.env` |
+| Dashboard | `src/dashboard/api.py` | `uv run dashboard` | `.env` |
 
 `src/main.py` (~840 lines) orchestrates 8 parallel async loops and 30 WebSocket tasks (10 symbols × 3 timeframes). It contains: `_5min_scanner`, `_bounty_watcher`, `_continuous_signal_scanner`, `_learning_loop`, `_auto_train_loop`, `_accounting_sync_loop`, `_api_health_monitor_loop`, and position monitor.
 
@@ -34,6 +34,7 @@
 | File | Role |
 |------|------|
 | `src/constants.py` | **Single source of truth** for all numeric parameters, `MODEL_FEATURES` list, risk thresholds, CB defaults, symbol list |
+| `src/paths.py` | **Centralized data paths** — `BRAIN_LOG`, `RUNTIME_STATE`, `MODEL_PATH`, `MODELS_DIR`, `META_STATS_PATH`, `BEST_PARAMS_PATH`, `ENGINE_HEARTBEAT`. Respects `SYSMHO_DATA_DIR` env var (defaults to `src/`). |
 | `src/runtime_config.py` | IPC channel between processes via `src/runtime_state.json`. Exposes: `is_autonomous()`, `set_autonomous()`, `reset_circuit_breaker()`, `reset_daily_pnl()`, `get_sync_status()`, `set_last_scan_at()` |
 | `src/runtime_state.json` | JSON file written at runtime — shared state between AI Engine and Dashboard. Not committed to git. |
 

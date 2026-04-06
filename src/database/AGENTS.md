@@ -6,14 +6,14 @@
 
 ## Connection
 
-Always connect via `config/settings.py` → `DATABASE_URL` (loaded from `.env`).
+Always connect via `config/settings.py` → `DATABASE_URL`. Entry points load `.env` before importing settings. Default `DB_HOST=localhost` works for both native PostgreSQL and Docker with exposed port 5432.
 
 ```python
 # In settings.py — the only place credentials are loaded:
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 ```
 
-`repository.py` creates an asyncpg connection pool (min=5, max=50) at startup. **Never** pass inline credentials in any skill, script, or command. All DB access goes through `DatabaseRepository` or via psql using the `DATABASE_URL` from the environment.
+`repository.py` creates an asyncpg connection pool (min=5, max=50) at startup. asyncpg is also used by the migration scripts (`uv run db-migrate`). **Never** pass inline credentials in any skill, script, or command. All DB access goes through `DatabaseRepository` or via psql using the `DATABASE_URL` from the environment.
 
 ---
 
@@ -107,4 +107,30 @@ ORDER BY minutes_ago DESC;
 | `migration_v15_0_0.sql` | Marks v2 models deprecated; adds index on `model_performance.model_name` |
 | `migration_v15_2_0.sql` | Creates `autonomous_decisions` and `meta_stats` tables |
 
-**How to apply**: Use the `sysmho-migrate` skill (`.claude/skills/sysmho-migrate/SKILL.md`) which guides safe application and verification. To apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
+**How to apply**: `uv run db-migrate` for native PostgreSQL (asyncpg, pure Python) or `uv run db-migrate-docker` for Docker PostgreSQL (docker exec psql). Both are idempotent. Alternatively, use the `sysmho-migrate` skill (`.claude/skills/sysmho-migrate/SKILL.md`) for guided application, or apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
+
+---
+
+## Database Setup
+
+Two approaches depending on your PostgreSQL setup:
+
+### Native PostgreSQL
+
+```bash
+uv run db-start       # verify native PG is reachable
+uv run db-migrate     # apply schema.sql + migrations via asyncpg (pure Python)
+uv run db-seed        # (optional) load seed data via local psql
+```
+
+### Docker PostgreSQL
+
+```bash
+uv run db-start-docker     # start sysmho-postgres container
+uv run db-migrate-docker   # apply schema + migrations via docker exec psql
+uv run db-seed-docker      # (optional) load seed data via docker exec psql
+```
+
+Credentials come from `.env` for both host and Docker flows. Schema and migrations are idempotent — safe to re-run.
+
+Seed data (`src/database/seed/sysmho_full.sql`) is git-ignored — must be placed manually. See `README.md` for full instructions.

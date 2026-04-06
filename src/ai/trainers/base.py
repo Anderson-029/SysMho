@@ -24,18 +24,13 @@ class BaseTrainer:
         """Inicializa el entrenador base."""
         self.db = db if db else DatabaseRepository()
         self.engineer = FeatureEngineer(db=self.db)
-        
-        # Rutas de persistencia del modelo XGBoost
-        base_dir = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
-        self.model_path = os.path.join(base_dir, 'models', 'xgboost_v1.joblib')
-        self.best_params_path = os.path.join(
-            base_dir, 'models', 'best_params.joblib'
-        )
+
+        from src.paths import MODEL_PATH, BEST_PARAMS_PATH, MODELS_DIR
+        self.model_path = MODEL_PATH
+        self.best_params_path = BEST_PARAMS_PATH
 
         # Crear carpeta de modelos si no existe
-        os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+        os.makedirs(MODELS_DIR, exist_ok=True)
 
     def create_labels(
         self, df: pd.DataFrame, threshold: float = LABEL_THRESHOLD

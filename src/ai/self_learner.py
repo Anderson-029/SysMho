@@ -17,10 +17,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-_STATS_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'models', 'meta_stats.json'
-)
+from src.paths import META_STATS_PATH as _STATS_PATH, MODELS_DIR
 _MIN_TRADES_META_MODEL = int(os.getenv('META_MIN_FOR_MODEL', '200'))
 
 
@@ -35,7 +32,7 @@ def _load() -> dict:
 
 
 def _save(stats: dict) -> None:
-    os.makedirs(os.path.dirname(_STATS_PATH), exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
     tmp = _STATS_PATH + '.tmp'
     with open(tmp, 'w') as f:
         json.dump(stats, f, indent=2)

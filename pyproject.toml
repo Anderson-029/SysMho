@@ -41,3 +41,27 @@ dev = [
     "pytest>=8.1",
     "pytest-asyncio>=0.23",
 ]
+
+[project.scripts]
+db-start = "scripts.cli:db_start"
+db-stop = "scripts.cli:db_stop"
+db-status = "scripts.cli:db_status"
+db-migrate = "scripts.cli:db_migrate"
+db-seed = "scripts.cli:db_seed"
+db-backup = "scripts.cli:db_backup"
+db-start-docker = "scripts.cli:db_start_docker"
+db-stop-docker = "scripts.cli:db_stop_docker"
+db-status-docker = "scripts.cli:db_status_docker"
+db-migrate-docker = "scripts.cli:db_migrate_docker"
+db-seed-docker = "scripts.cli:db_seed_docker"
+db-backup-docker = "scripts.cli:db_backup_docker"
+engine = "scripts.cli:engine"
+dashboard = "scripts.cli:dashboard"
+test = "scripts.cli:test"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src", "scripts"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -8,17 +8,12 @@ detecta un riesgo inminente de liquidación.
 """
 
 import asyncio
-import os
 import time
 from typing import Dict, Any
 
 from src.database.repository import DatabaseRepository
 from src.constants import BINANCE_FUTURES_TAKER_FEE
-
-_BRAIN_LOG = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "sysmho_brain.log"
-)
+from src.paths import BRAIN_LOG as _BRAIN_LOG
 
 
 def _log(msg: str) -> None:
@@ -238,7 +233,8 @@ class PositionMonitor:
             f"✅ [SIDE_MISMATCH] {symbol} corregida en BD: "
             f"side={official['side']}, qty={official['quantity']:.4f}, "
             f"entry={official['entry_price']:.6f}, "
-            f"SL={new_sl:.6f if new_sl else 'N/A'}, TP={new_tp:.6f if new_tp else 'N/A'}"
+            f"SL={f'{new_sl:.6f}' if new_sl is not None else 'N/A'}, "
+            f"TP={f'{new_tp:.6f}' if new_tp is not None else 'N/A'}"
         )
 
     async def _close_position(

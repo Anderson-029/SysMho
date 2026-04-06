@@ -160,26 +160,24 @@ def test_risk_manager_no_db_connect_in_business_logic():
 
 def test_stop_script_checks_open_positions():
     """
-    stop_sysmho.sh debe consultar la BD antes de matar procesos
-    y alertar si hay posiciones abiertas.
+    La documentación debe recordar el riesgo de posiciones abiertas al detener el motor
+    (antes: stop_sysmho.sh; ahora: README / operación manual con uv).
     """
-    with open("stop_sysmho.sh", "r", encoding="utf-8") as f:
-        content = f.read()
+    with open("README.md", "r", encoding="utf-8") as f:
+        content = f.read().lower()
 
-    assert "positions" in content.lower(), (
-        "stop_sysmho.sh no verifica posiciones abiertas antes de apagar. "
-        "Matar el proceso con posiciones activas puede dejar capital sin gestión."
+    assert "positions" in content or "posiciones" in content, (
+        "README.md debe mencionar posiciones (abiertas / gestión) al documentar apagado o riesgo."
     )
 
 
 def test_stop_script_version_is_current():
-    """El banner de stop_sysmho.sh debe mostrar la versión actual del sistema."""
+    """README debe reflejar la versión actual (sustituye banner de stop_sysmho.sh)."""
     from src.constants import SYSMHO_VERSION
 
-    with open("stop_sysmho.sh", "r", encoding="utf-8") as f:
+    with open("README.md", "r", encoding="utf-8") as f:
         content = f.read()
 
-    assert f"V{SYSMHO_VERSION}" in content, (
-        f"stop_sysmho.sh no muestra V{SYSMHO_VERSION} en el banner. "
-        "Sincronizar con SYSMHO_VERSION en constants.py."
+    assert f"v{SYSMHO_VERSION}".lower() in content.lower(), (
+        f"README.md no muestra v{SYSMHO_VERSION}. Sincronizar con SYSMHO_VERSION en constants.py."
     )

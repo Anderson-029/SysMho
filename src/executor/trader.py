@@ -6,7 +6,6 @@ auditadas e inserta el registro transaccional exacto
 (fees, notional efectivo, price slip) en la base de datos.
 """
 
-import os
 import time
 from typing import Dict, Any, Optional
 
@@ -19,11 +18,7 @@ from config.settings import (
 )
 from src.constants import MIN_NOTIONAL_USDT
 from src.database.repository import DatabaseRepository
-
-_BRAIN_LOG = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "sysmho_brain.log"
-)
+from src.paths import BRAIN_LOG as _BRAIN_LOG
 
 
 def _log(msg: str) -> None:
@@ -56,7 +51,7 @@ class TradeExecutor:
             }
         })
         if BINANCE_TESTNET:
-            self.exchange.set_sandbox_mode(True)
+            self.exchange.enable_demo_trading(True)
 
         self.db = db if db else DatabaseRepository()
         self._api_status: str = "UNKNOWN"
@@ -275,7 +270,7 @@ class TradeExecutor:
                         'pnl': float(pos.get('unrealizedPnl', 0.0)),
                         'mark_price': float(pos.get('markPrice', 0.0)),
                         'entry_price': float(pos.get('entryPrice', 0.0)),
-                        'leverage': float(pos.get('leverage', 1.0)),
+                        'leverage': float(pos.get('leverage') or 1.0),
                         'side': 'BUY' if amt > 0 else 'SELL',
                         'quantity': abs(amt),
                         'collateral': float(pos.get('initialMargin', 0.0))

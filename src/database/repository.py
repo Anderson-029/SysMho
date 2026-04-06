@@ -98,6 +98,61 @@ class DatabaseRepository:
         async with self.pool.acquire() as conn:
             await conn.executemany(query, records_with_atr)
 
+    async def backfill_atr_14_all(self) -> None:
+        """
+        Recalcula atr_14 para todas las filas de market_data por (symbol, timeframe).
+
+        Útil cuando hay datos cargados sin ATR (seeds antiguos o inserts manuales).
+        El colector ya calcula ATR en insert_market_data_batch; esto alinea histórico.
+        """
+        if not self.pool:
+            return
+        async with self.pool.acquire() as conn:
+            pairs = await conn.fetch(
+                "SELECT DISTINCT symbol, timeframe FROM market_data"
+            )
+            for p in pairs:
+                symbol, tf = p["symbol"], p["timeframe"]
+                rows = await conn.fetch(
+                    """
+                    SELECT open_time, open, high, low, close, volume
+                    FROM market_data
+                    WHERE symbol = $1 AND timeframe = $2
+                    ORDER BY open_time ASC
+                    """,
+                    symbol,
+                    tf,
+                )
+                if len(rows) < 14:
+                    continue
+                tuples: List[Tuple] = [
+                    (
+                        symbol,
+                        tf,
+                        r["open_time"],
+                        float(r["open"]),
+                        float(r["high"]),
+                        float(r["low"]),
+                        float(r["close"]),
+                        float(r["volume"]),
+                    )
+                    for r in rows
+                ]
+                atrs = _compute_atr(tuples)
+                for rec, atr in zip(tuples, atrs):
+                    if atr is not None:
+                        await conn.execute(
+                            """
+                            UPDATE market_data
+                            SET atr_14 = $1
+                            WHERE symbol = $2 AND timeframe = $3 AND open_time = $4
+                            """,
+                            atr,
+                            symbol,
+                            tf,
+                            rec[2],
+                        )
+
     async def get_market_data_count(
         self, symbol: str, timeframe: str
     ) -> int:

@@ -31,11 +31,7 @@ def _env_float(key: str, default: float) -> float:
 META_SCORE_THRESHOLD = _env_float('META_SCORE_THRESHOLD', 0.52)
 MIN_TRADES_FOR_STATS = int(os.getenv('META_MIN_TRADES', '10'))
 
-# Ruta del archivo de estadísticas (JSON liviano, respaldado por meta_stats en BD)
-_STATS_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'models', 'meta_stats.json'
-)
+from src.paths import META_STATS_PATH as _STATS_PATH
 
 
 def _load_stats() -> dict:

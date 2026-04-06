@@ -15,20 +15,33 @@ Stack: Python 3.12 + FastAPI + PostgreSQL + XGBoost + CCXT Pro.
 - **Python execution**: Use `uv run python ...` — manages venv automatically, cross-platform.
 - **Skills**: Do NOT load all skills at once. Check the index below, load only what the task needs (max 2–3).
 - **Constants**: Single source of truth is `src/constants.py` — do not hardcode thresholds elsewhere.
-- **Secrets**: All secrets live in `.env`. Reference them via `config/settings.py`. Never modify `.env` directly; document new variables in `.env.example`.
-- **IPC**: `src/runtime_state.json` bridges the AI Engine and Dashboard processes.
+- **Secrets**: All secrets live in `.env` (never committed). Reference them via `config/settings.py`. Never modify env files directly; document new variables in `.env.example`.
+- **IPC**: `src/runtime_state.json` and `sysmho_brain.log` bridge the AI Engine and Dashboard. Paths resolved via `src/paths.py`.
+- **Paths**: IPC/model/log paths are centralized in `src/paths.py`. Never use `__file__`-relative paths for data files.
 - **Deep context**: `README.md` (setup, config, version history). For live audits, use the `sysmho-audit` or `sysmho-performance` skills.
 
 ---
 
 ## Two Processes
 
-| Process | Entry Point | Command |
-|---------|------------|---------|
-| AI Engine | `src/main.py` | `uv run python -m src.main` |
-| Dashboard | `src/dashboard/api.py` | `uv run uvicorn src.dashboard.api:app --host 0.0.0.0 --port 8000` |
+| Process | Entry Point | Command | Env file |
+|---------|------------|---------|----------|
+| AI Engine | `src/main.py` | `uv run engine` | `.env` |
+| Dashboard | `src/dashboard/api.py` | `uv run dashboard` | `.env` |
 
-Communication: PostgreSQL (shared data) + `src/runtime_state.json` (IPC: autonomous mode, CB reset, PnL reset, sync status).
+Database: PostgreSQL (native or Docker container — user's choice). Schema and migrations are applied via CLI entry points (idempotent, cross-platform).
+
+```bash
+uv run db-start-docker    # start PostgreSQL container
+uv run db-migrate         # apply schema + migrations
+uv run engine             # start AI engine
+uv run dashboard          # start dashboard API
+uv run test               # run test suite
+```
+
+Communication: PostgreSQL (shared data) + `src/runtime_state.json` (IPC: autonomous mode, CB reset, PnL reset, sync status) + `sysmho_brain.log` (live telemetry). Paths resolved via `src/paths.py`.
+
+**Env file** (never committed): `.env` — Binance keys, `DB_*`, CB/Meta thresholds, `AUTONOMOUS_MODE`, `DASHBOARD_API_KEY`, etc. Template: `.env.example`.
 
 ---
 
@@ -100,7 +113,7 @@ Keep the agentic setup in sync with the codebase. Apply after any structural cha
 - **Added/removed a DB table or migration**: Update `src/database/AGENTS.md`.
 - **Added/removed an API route or router**: Update `src/dashboard/AGENTS.md`.
 - **Changed model features or training pipeline**: Update `src/ai/AGENTS.md`.
-- **Changed entry points or startup commands**: Update the Two Processes table above.
+- **Changed entry points or CLI commands**: Update the Two Processes table above and `README.md` command tables.
 
 ### What NOT to update inline
 
