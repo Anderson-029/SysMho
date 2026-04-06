@@ -51,13 +51,16 @@ PostgreSQL (market_data, sentiment_data)
 
 ## Model Files
 
-| File | Contents |
-|------|----------|
-| `src/ai/models/xgboost_v1.joblib` | Serialized model (tuple: xgb_model, feature_names) |
-| `src/ai/models/best_params.joblib` | Optimal hyperparameters from Optuna (n_estimators=235, max_depth=5, lr=0.1259, subsample=0.667, colsample=0.788, gamma=1.53e-05) |
-| `src/ai/models/meta_stats.json` | SelfLearner statistics cache — written by `self_learner.py`, read by `meta_evaluator.py` |
+| File | Contents | Status |
+|------|----------|--------|
+| `src/ai/models/xgboost_v1_1.joblib` | **ACTIVE** — Serialized model (tuple: xgb_model, feature_names) | ✅ Current (26M) |
+| `src/ai/models/xgboost_v1.joblib` | Previous version — kept for reference/comparison only | 📦 Archived (8.8M) |
+| `src/ai/models/best_params.joblib` | Optimal hyperparameters from Optuna (n_estimators=235, max_depth=5, lr=0.1259, subsample=0.667, colsample=0.788, gamma=1.53e-05) | ✅ Used by trainer |
+| `src/ai/models/meta_stats.json` | SelfLearner statistics cache — written by `self_learner.py`, read by `meta_evaluator.py` | ✅ Live |
 
-**If you change `MODEL_FEATURES`**: delete `xgboost_v1.joblib` before retraining — the old model is incompatible with a different feature set.
+**Model switching**: `src/paths.py` → `MODEL_PATH = ...xgboost_v1_1.joblib`. To compare against v1: temporarily change `MODEL_PATH` and restart.
+
+**If you change `MODEL_FEATURES`**: delete all `.joblib` before retraining — old models are incompatible with different feature sets.
 
 ---
 
