@@ -20,8 +20,6 @@ backups/
 # Logs
 *.log
 
-# AI Models backups (generated during retraining — not needed)
-src/ai/models/*_backup*.joblib
 
 # IDE
 .vscode/
