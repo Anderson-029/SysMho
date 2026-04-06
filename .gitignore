@@ -22,6 +22,7 @@ backups/
 
 # AI Models (too large for git)
 src/ai/models/*.joblib
+src/ai/models/*_backup*.joblib
 
 # IDE
 .vscode/
