@@ -641,8 +641,11 @@ async function pollPositions() {
             if (tp && sl && current && tp !== sl) {
                 barPct = Math.max(0, Math.min(100, ((current - sl) / (tp - sl)) * 100));
             }
-            // Color basado en si vamos ganando o perdiendo (no en posición en rango)
-            const barColor = pnlNet > 0 ? '#34d399' : pnlNet < 0 ? '#ef4444' : '#fbbf24';
+            // Color basado en si el precio se movió favorable (verde) o desfavorable (rojo)
+            // LONG: precio > entrada = favorable (verde), precio < entrada = desfavorable (rojo)
+            // SHORT: precio < entrada = favorable (verde), precio > entrada = desfavorable (rojo)
+            const isFavorable = isLong ? current > entry : current < entry;
+            const barColor = isFavorable ? '#34d399' : '#ef4444';
 
             // Tiempo en posición
             let timeLabel = '';
@@ -674,15 +677,15 @@ async function pollPositions() {
                     </div>
                 </div>
 
-                <!-- Fila: Invertido (margen) | En Juego (notional) | Cantidad -->
+                <!-- Fila: Margen Utilizado (lo que salió del wallet) | Notional en Riesgo | Cantidad -->
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.4rem; font-size:0.72rem; margin-bottom:8px; text-align:center;">
                     <div style="background:rgba(255,255,255,0.03); border-radius:4px; padding:5px;">
-                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Invertido</div>
-                        <strong title="Margen real de tu wallet">$${margin.toFixed(2)}</strong>
+                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Margen Utilizado</div>
+                        <strong title="Capital de tu wallet en esta posición">$${margin.toFixed(2)}</strong>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border-radius:4px; padding:5px;">
-                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">En Juego</div>
-                        <strong title="Notional = tokens × precio actual">$${notional.toFixed(2)}</strong>
+                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">En Riesgo</div>
+                        <strong title="Valor actual de la posición (tokens × precio)">$${notional.toFixed(2)}</strong>
                     </div>
                     <div style="background:rgba(255,255,255,0.03); border-radius:4px; padding:5px;">
                         <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Cantidad</div>
@@ -690,18 +693,18 @@ async function pollPositions() {
                     </div>
                 </div>
 
-                <!-- Fila: Entrada | Actual | Equilibrio -->
+                <!-- Fila: Entrada | Actual | Distancia al Punto de Equilibrio -->
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.4rem; font-size:0.72rem; margin-bottom:8px; text-align:center;">
                     <div>
                         <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Entrada</div>
                         <strong>$${priceFmt(entry)}</strong>
                     </div>
                     <div>
-                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Actual</div>
+                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Precio Actual</div>
                         <strong style="color:#60a5fa;">$${priceFmt(current)}</strong>
                     </div>
                     <div>
-                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">Equilibrio</div>
+                        <div style="color:var(--text-muted); font-size:0.58rem; text-transform:uppercase;">A Equilibrio</div>
                         <strong style="color:#fbbf24;">$${priceFmt(breakEven)}</strong>
                         ${beDist !== null ? `<div style="font-size:0.58rem; color:${beDist >= 0 ? 'var(--success)' : 'var(--danger)'};">${beDist >= 0 ? '+' : ''}${beDist.toFixed(2)}%</div>` : ''}
                     </div>

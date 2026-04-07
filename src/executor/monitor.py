@@ -337,6 +337,17 @@ class PositionMonitor:
         official = official_details.get(symbol)
 
         if official:
+            # Posición activa en Binance — verificar mismatch de side ANTES de cerrar
+            if official['side'] != pos['side']:
+                _log(
+                    f"⚠️ [SIDE_MISMATCH] {symbol}: BD={pos['side']} ≠ Binance={official['side']} — "
+                    f"corrigiendo registro local antes de cerrar..."
+                )
+                await self._correct_side_mismatch(pos, official)
+                # Recargar pos después de la corrección
+                async with self.db.pool.acquire() as conn:
+                    pos = await conn.fetchrow("SELECT * FROM positions WHERE symbol = $1", symbol)
+
             # Posición activa en Binance — tomar precio y PnL oficial
             current_price = official['mark_price']
             pnl = official['pnl']
