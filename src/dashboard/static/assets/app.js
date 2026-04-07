@@ -1067,6 +1067,37 @@ function updateScanCountdown() {
     }
 }
 
+// --- ESTADO DEL CEREBRO (AI Engine) ---
+function updateEngineStatus() {
+    const el = document.getElementById('engineStatus');
+    if (!el) return;
+
+    if (!systemOnline) {
+        el.className = 'api-status api-disconnected';
+        el.innerHTML = '<i class="fa-solid fa-brain"></i> CEREBRO OFFLINE';
+        return;
+    }
+
+    if (!_lastScanTs) {
+        el.className = 'api-status api-init';
+        el.innerHTML = '<i class="fa-solid fa-brain fa-spin"></i> CEREBRO...';
+        return;
+    }
+
+    const delta = (Date.now() / 1000) - _lastScanTs;
+
+    if (delta < 360) {
+        el.className = 'api-status api-active';
+        el.innerHTML = '<i class="fa-solid fa-brain"></i> CEREBRO ACTIVO';
+    } else if (delta < 900) {
+        el.className = 'api-status api-reconnecting';
+        el.innerHTML = '<i class="fa-solid fa-brain fa-beat"></i> RECONECTANDO';
+    } else {
+        el.className = 'api-status api-disconnected';
+        el.innerHTML = '<i class="fa-solid fa-brain"></i> CEREBRO DETENIDO';
+    }
+}
+
 // --- IGNICIÓN Y CICLOS DE VIDA ---
 function startLifecycles() {
     console.log("🚀 SysMho: Iniciando ciclos de vida dinámicos...");
@@ -1096,6 +1127,10 @@ function startLifecycles() {
     setInterval(fetchLastScanTime, 10000);   // Resincronizar cada 10s con el backend
     updateScanCountdown();                   // Arranque inmediato
     setInterval(updateScanCountdown, 1000);  // Cronómetro tick cada segundo
+
+    // Cerebro (AI Engine)
+    updateEngineStatus();
+    setInterval(updateEngineStatus, 5000);  // Badge cerebro cada 5s
 
     // Autonomía
     updateAutonomyBadge();

@@ -894,6 +894,11 @@ class AutonomousBot:
             tasks.append(asyncio.create_task(self.ws.watch_ohlcv(sym, '1h')))
             tasks.append(asyncio.create_task(self.ws.watch_ohlcv(sym, '4h')))
 
+        print(f"\n{'═'*54}")
+        print(f"  ✅  CEREBRO SYSMHO OPERATIVO")
+        print(f"  ✅  {len(self.symbols)} activos | {len(tasks)} módulos activos")
+        print(f"{'═'*54}\n")
+
         try:
             await asyncio.gather(*tasks)
         except asyncio.CancelledError:
