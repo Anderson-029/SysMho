@@ -10,7 +10,7 @@ import asyncio
 import functools
 import gc
 import os
-from typing import List, Union
+from typing import List, Optional, Union
 
 import joblib
 import numpy as np
@@ -20,15 +20,15 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.utils.class_weight import compute_sample_weight
 
 from src.ai.trainers.base import BaseTrainer
-from src.constants import MODEL_FEATURES
+from src.constants import MODEL_FEATURES, TRAINING_WINDOW_MONTHS, CANDLES_PER_MONTH_5M
 
 
 class SequentialTrainer(BaseTrainer):
     """Clase para Entrenamiento Secuencial Multi-Activo."""
 
     async def train_model(
-        self, symbols: Union[str, List[str]], timeframe: str, 
-        best_params: dict
+        self, symbols: Union[str, List[str]], timeframe: str,
+        best_params: dict, window_months: Optional[int] = None
     ) -> None:
         """
         Entrena el modelo XGBoost de manera incremental.
@@ -37,24 +37,31 @@ class SequentialTrainer(BaseTrainer):
             symbols: Un símbolo o lista de símbolos a entrenar.
             timeframe: Temporalidad de los datos.
             best_params: Hiperparámetros a usar en el XGBoost.
+            window_months: Meses de datos a usar (sliding window).
+                           None = todo el histórico.
         """
         if isinstance(symbols, str):
             symbols = [symbols]
+
+        months = window_months or TRAINING_WINDOW_MONTHS
+        candle_limit = months * CANDLES_PER_MONTH_5M if timeframe == '5m' else None
 
         print(
             f"🧠 Iniciando entrenamiento SECUENCIAL (Ataque Serial) para "
             f"{len(symbols)} activos ({timeframe})..."
         )
+        if candle_limit:
+            print(f"📅 Sliding window: últimos {months} meses ({candle_limit:,} velas)")
 
         model = None
-        features = MODEL_FEATURES  # Lista fija de 27 features auditadas
+        features = MODEL_FEATURES
 
         for i, symbol in enumerate(symbols):
             print(f"\n🚀 [{i+1}/{len(symbols)}] Procesando {symbol}...")
 
-            # 1. Cargar datos
+            # 1. Cargar datos (sliding window si aplica)
             df_symbol = await self.engineer.get_master_dataframe(
-                symbol, timeframe
+                symbol, timeframe, limit=candle_limit
             )
             if len(df_symbol) < 1000:
                 print(f"⚠️ Datos insuficientes para {symbol}. Saltando...")

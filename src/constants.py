@@ -54,6 +54,12 @@ MIN_CANDLES_FOR_PREDICTION = 20
 LABEL_THRESHOLD = 0.007  # 0.7%: movimiento real en futuros 5m (antes 0.2% = ruido)
 TRAIN_TEST_SPLIT = 0.15  # 15% para test, 85% para entrenamiento
 
+# Sliding Window: meses de datos a usar en cada retrain.
+# El modelo aprende el mercado ACTUAL, olvidando condiciones obsoletas.
+# 3 meses = 25,920 velas 5m (30d × 24h × 12 velas/h)
+TRAINING_WINDOW_MONTHS = 3
+CANDLES_PER_MONTH_5M = 8640  # 30 × 24 × 12
+
 DEFAULT_MODEL_PARAMS = {
     'n_estimators': 235,       # Óptimo Optuna (antes 150)
     'learning_rate': 0.1259,   # Óptimo Optuna (antes 0.05)
