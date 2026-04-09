@@ -348,7 +348,29 @@ class PositionMonitor:
                 async with self.db.pool.acquire() as conn:
                     pos = await conn.fetchrow("SELECT * FROM positions WHERE symbol = $1", symbol)
 
-            # Posición activa en Binance — tomar precio y PnL oficial
+                # ★ CRITICAL FIX: RE-VERIFICAR Binance DESPUÉS de la corrección
+                # porque puede haber cambiado en el tiempo que pasó (race condition).
+                # Sin esto, usamos datos obsoletos y ReduceOnly se rechaza.
+                _log(f"🔄 Re-verificando estado en Binance después de corrección...")
+                official_details = None
+                if self.trader:
+                    official_details = await self.trader.get_active_positions_details()
+
+                if official_details is None:
+                    _log(f"❌ Cierre de {symbol} ABORTADO: Binance no respondió en re-check.")
+                    return False
+
+                official = official_details.get(symbol)
+                if not official:
+                    # Posición cerrada entre la corrección y ahora
+                    _log(f"📡 {symbol} cerrada en Binance durante corrección. Sincronizando...")
+                    await self._close_position(
+                        pos, float(pos['pnl_unrealized'] or 0.0),
+                        float(pos['pnl_unrealized'] or 0.0), "BINANCE_SYNC"
+                    )
+                    return True
+
+            # Posición activa en Binance — tomar precio y PnL oficiales (FRESCOS ahora)
             current_price = official['mark_price']
             pnl = official['pnl']
             _log(
@@ -364,7 +386,7 @@ class PositionMonitor:
             )
             return True
 
-        # 2. Enviar orden de cierre a Binance y limpiar BD
+        # 2. Enviar orden de cierre a Binance y limpiar BD (con datos FRESCOS)
         await self._close_position(pos, current_price, pnl, "MANUAL_USER")
         return True
 

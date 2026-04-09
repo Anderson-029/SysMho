@@ -37,6 +37,20 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 | `sysmho-refactor` | Analyzes a module and lists concrete cleanup opportunities with code evidence — no changes without approval. Use when looking for refactoring targets. | `.claude/skills/sysmho-refactor/SKILL.md` |
 | `sysmho-test-coverage` | Maps which modules have tests and which critical functions are not covered. Use when deciding which tests to write next. | `.claude/skills/sysmho-test-coverage/SKILL.md` |
 
+### Analytics (2) — *PLANNED PHASE 2*
+
+| Skill | Description | Path | Status |
+|-------|-------------|------|--------|
+| `sysmho-backtest` | Simulate historical signals — if the model had traded the last 30 days, what would the PnL be? Useful for validation before production. | `.claude/skills/sysmho-backtest/SKILL.md` | 🔵 Planned |
+| `sysmho-feature-importance` | Rank the 27 features by importance in predictions. Identify low-impact features for potential cleanup. | `.claude/skills/sysmho-feature-importance/SKILL.md` | 🔵 Planned |
+
+### Reporting (2) — *PLANNED PHASE 3*
+
+| Skill | Description | Path | Status |
+|-------|-------------|------|--------|
+| `sysmho-risk-report` | Complete risk dashboard — drawdown analysis, exposure limits, Circuit Breaker state, maximum loss scenario. | `.claude/skills/sysmho-risk-report/SKILL.md` | 🔵 Planned |
+| `sysmho-weekly` | Weekly summary — PnL trend, win rate by day, best/worst assets, signals rejected vs approved, key insights. | `.claude/skills/sysmho-weekly/SKILL.md` | 🔵 Planned |
+
 ---
 
 ## Module Navigation
