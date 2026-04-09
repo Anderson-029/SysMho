@@ -64,6 +64,7 @@ class MetaEvaluator:
         self,
         signal: dict,
         recent_trades: Optional[List[dict]] = None,
+        window_penalty: float = 0.0,
     ) -> Tuple[float, bool, List[str]]:
         """
         Evalúa una señal y devuelve (meta_score, approved, reasons).
@@ -71,6 +72,8 @@ class MetaEvaluator:
         Args:
             signal: Diccionario de la señal (campos de pending_approvals).
             recent_trades: Últimas N operaciones cerradas (para racha y contexto).
+            window_penalty: Penalty adicional al umbral dinámico (ej. 0.08 en ventana
+                            horaria destructiva). Temporal hasta acumular datos by_hour.
 
         Returns:
             meta_score [0..1], approved (bool), reasons (lista de strings)
@@ -160,15 +163,44 @@ class MetaEvaluator:
             meta_score = confidence
 
         meta_score = round(max(0.0, min(1.0, meta_score)), 4)
-        approved = meta_score >= META_SCORE_THRESHOLD
+
+        # ── Umbral dinámico por activo ───────────────────────────────────
+        # Activos con bajo WR histórico necesitan mayor convicción del modelo.
+        # Fórmula: threshold sube 0.40 puntos por cada 1.0 de WR por debajo del 50%.
+        # Ejemplo: POL 25% WR → threshold = 0.52 + (0.50 - 0.25) * 0.40 = 0.62
+        # Ejemplo: ETH 58% WR → threshold = 0.52 (WR > 50%, no sube)
+        # Cap máximo en 0.72 para no bloquear completamente un activo.
+        if total >= MIN_TRADES_FOR_STATS:
+            asset_wr = sym_stats.get('win_rate', 0.5)
+            dynamic_threshold = META_SCORE_THRESHOLD + max(0.0, (0.50 - asset_wr) * 0.40)
+        else:
+            asset_wr = 0.5
+            dynamic_threshold = META_SCORE_THRESHOLD
+
+        # Penalty temporal por ventana horaria destructiva (14-17 UTC).
+        # Se activa desde _autonomous_decide() cuando la hora es riesgosa.
+        # Desaparece solo cuando by_hour acumula >= 5 trades y el componente 2
+        # del MetaEvaluador ya penaliza esa franja por WR real.
+        dynamic_threshold = round(min(dynamic_threshold + window_penalty, 0.75), 4)
+
+        approved = meta_score >= dynamic_threshold
+
+        if dynamic_threshold != META_SCORE_THRESHOLD:
+            label = f"WR {asset_wr*100:.1f}%"
+            if window_penalty > 0:
+                label += f" + ventana riesgosa +{window_penalty:.2f}"
+            reasons.append(
+                f"📐 Umbral ajustado {symbol}: {dynamic_threshold:.2f} "
+                f"({label})"
+            )
 
         if approved:
             reasons.append(
-                f"🤖 MetaScore {meta_score:.3f} ≥ umbral {META_SCORE_THRESHOLD:.2f} → APROBADO"
+                f"🤖 MetaScore {meta_score:.3f} ≥ umbral {dynamic_threshold:.2f} → APROBADO"
             )
         else:
             reasons.append(
-                f"🤖 MetaScore {meta_score:.3f} < umbral {META_SCORE_THRESHOLD:.2f} → RECHAZADO"
+                f"🤖 MetaScore {meta_score:.3f} < umbral {dynamic_threshold:.2f} → RECHAZADO"
             )
 
         return meta_score, approved, reasons

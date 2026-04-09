@@ -10,7 +10,7 @@ Each skill is located in `.claude/skills/{name}/SKILL.md` with YAML frontmatter 
 
 Load **only** the skill you need. If the task crosses domains, load max 2–3.
 
-### Operational (11)
+### Operational (12)
 
 | Skill | Description | Path |
 |-------|-------------|------|
@@ -20,6 +20,7 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 | `sysmho-deploy` | Controlled restart — verifies open positions, stops processes, applies pending migrations, starts in order. Use when restarting SysMho safely. | `.claude/skills/sysmho-deploy/SKILL.md` |
 | `sysmho-logs` | Reads and analyzes neural telemetry from the brain log grouped by event type. Use when investigating runtime behavior or errors. | `.claude/skills/sysmho-logs/SKILL.md` |
 | `sysmho-market` | Real-time crypto market context — BTC/ETH trends, funding rates, RSI for all 10 assets and overheating alerts. Use when assessing current market conditions. | `.claude/skills/sysmho-market/SKILL.md` |
+| `sysmho-metrics` | Muestra el pipeline completo de predicción, las 28 features del modelo, umbrales dinámicos del MetaEvaluador por activo y estado actual del CircuitBreaker. Usar para entender qué métricas usa SysMho para decidir si operar. | `.claude/skills/sysmho-metrics/SKILL.md` |
 | `sysmho-migrate` | Applies SQL migrations safely and verifies they were applied correctly. Use when there are pending database migrations. | `.claude/skills/sysmho-migrate/SKILL.md` |
 | `sysmho-performance` | Real performance analysis — KPIs, win rate, PnL, best assets and MetaEvaluator calibration. Use when evaluating trading performance. | `.claude/skills/sysmho-performance/SKILL.md` |
 | `sysmho-retrain` | Orchestrates safe XGBoost retraining — verifies data, backs up old model, retrains and validates metrics. Use when the model needs retraining. | `.claude/skills/sysmho-retrain/SKILL.md` |

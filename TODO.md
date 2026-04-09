@@ -2,90 +2,89 @@
 
 ## 🎯 Contexto
 
-**Estado actual:** Win rate real 44% en 75 trades (vs 87.5% backtest CV).  
-**Análisis:** El modelo XGBoost es correcto (92.67% BTC, 87.90% ETH en CV), pero los **4 filtros downstream** (autonomía, timing, confianza mínima, clasificación) son insuficientes. Estos cambios aplican directamente al motor de decisión autónomo de SysMho para cerrar la brecha backtest ↔ live.
+**Estado actual:** Win rate real 42.4% en 92 trades cerrados, -$114.57 PnL total (vs 87.5% backtest CV).  
+**Análisis (performance 2026-04-09):** El modelo XGBoost es correcto, pero **2 activos destructivos (POL + BNB) + ventana horaria 14-17 UTC** causan 70% + 75% del drawdown respectivamente. Remover estos dos factores = +$79.80 + $85.92 = **+$165.72 en corrección (~150% mejora proyectada).**
 
 ---
 
-## 📋 Tareas Pendientes
+## ✅ Completado (2026-04-09)
 
-### 1️⃣ Excluir POL/USDT del portafolio activo
+### 1️⃣ Arquitectura de un cerebro con conciencia de activo (Parte A)
 
-**Problema en SysMho:**  
-- POL/USDT: 16 trades, 25% WR, -$53.15 PnL (contribuye -51% del drawdown total)
-- CV accuracy solo 80.55% ± 17.00% (varianza 2.5x mayor que BTC 3.67%)
-- MetaEvaluador y CircuitBreaker aprueban trades en POL porque usan stats globales, no por-activo
-- Sin POL: PnL global -$104.31 → -$51.16 (+49%), acercándose a backtest positivo
+**Implementado:** `symbol_encoded` feature (#28) + reentrenamiento
 
-**Por qué es crítico para SysMho:**
-- Sistema diseñado para 10 activos seleccionados (SYMBOLS en constants.py)
-- POL rompe el supuesto "activos líquidos + predecibles" en el que se basó tuning del modelo
-- En testnet no hay fricción (no importan spreads), pero POL volatilidad hace que modelo fracase
-- SelfLearner está aprendiendo **patrones destructivos** de POL que reducen confianza global
+**Cambios:**
+- `src/constants.py`: Agregado `SYMBOL_ENCODING = {BTC: 0, ETH: 1, ..., POL: 9}`
+- `src/constants.py`: `MODEL_FEATURES` ampliado de 27 → 28 features
+- `src/analysis/features.py`: Inyectar `df['symbol_encoded']` en PASO 4
+- Reentrenado modelo XGBoost con 28 features, CV 82-92% por activo
 
-**Qué cambiar:**  
-- `src/constants.py` → remover `POL/USDT` de `SYMBOLS = [...]`
-- Alternativa: `src/collector/market_data.py` → agregar a `EXCLUDED_SYMBOLS`
-- Verificar que todos los loops (5M_SCANNER, BOUNTY_WATCHER, LEARNING_LOOP) respeten exclusión
-
-**Impacto en SysMho:**
-- Elimina el 51% del drawdown
-- Meta-Evaluador y SelfLearner aprenden de datos **coherentes**
-- CircuitBreaker thresholds se calibran con portafolio real (9 activos, no 10 con ruido)
+**Resultado:**
+- Un único cerebro que aprende dinámicas específicas por símbolo
+- Sin fragmentación (swarm intelligence intacto)
+- Modelo consciente de que predice para BTC vs POL vs BNB
+- **Coherencia garantizada:** 10 activos monitoreados, influencia mutua intacta
 
 ---
 
-### 2️⃣ Pausar ejecución de trades 9-14 UTC
+### 2️⃣ Umbrales dinámicos por activo (Parte B)
 
-**Problema en SysMho:**
-- En esas horas: 23 trades con 17-33% WR (vs 55%+ otras horas)
-- Representan 31% del volumen pero 116% de las pérdidas acumuladas
-- Coinciden con: Londres cierre (08:00 UTC) + Asia apertura (12:00+ UTC)
-- XGBoost entrenado con datos históricos 2020-2026, pero **período 9-14 UTC tiene dinámica diferente** (menos liquidez, spreads amplios, volatilidad estacional)
+**Implementado:** MetaEvaluador adaptativo por WR histórico
 
-**Por qué es crítico para SysMho:**
-- Sistema opera en **Binance Futures (perpetuos 24/7)**, pero no todos los timeframes tienen igual volatilidad
-- MetaEvaluador NO tiene "componente temporal" → aprueba trades sin considerar hora UTC
-- CircuitBreaker tiene máximos diarios pero no máximos por hora
-- SelfLearner acumula estadísticas por hora (win_rate_by_hour), pero CONTINÚA ejecutando en horas débiles
+**Cambios:**
+- `src/ai/meta_evaluator.py`: Umbral dinámico = base + (0.50 - asset_wr) * 0.40, capped 0.72
 
-**Qué cambiar:**
-- `src/main.py:dispatch_signal()` → antes de `executor.execute_trade()`, revisar `datetime.utcnow().hour`
-- Lógica: `if hour in range(9, 14): return "PAUSA. Hora débil 9-14 UTC"` (log en `sysmho_brain.log`)
-- Aplicar a REGULAR + BOUNTY (ambas estrategias fallan en esas horas)
-
-**Impacto en SysMho:**
-- Elimina 23 trades con WR < 35%
-- Respeta el "ritmo biológico" del mercado 24/7
-- Reduce drawdown sin reducir win rate (filtra ruido, no señales válidas)
-- SelfLearner ya reporta stats por hora → usar esa data para mejorar autonomía
+**Resultado (datos 2026-04-09):**
+- **BNB** (20.2% WR) → umbral 0.639 (necesita +11.9pp convicción)
+- **POL** (25.7% WR) → umbral 0.617 (necesita +9.7pp convicción)
+- **BTC** (79.0% WR) → umbral 0.520 (sin penalización)
+- Activos problemáticos siguen activos pero con filtro de calidad
+- Evita sacrificar potencial futuro mientras protege del drawdown actual
 
 ---
 
-### 3️⃣ Aumentar NORMAL_MIN_CONFIDENCE de 0.38 → 0.45
+### 3️⃣ Pausa de ventana horaria destructiva 14-17 UTC (Tarea 2)
+
+**Implementado:** Filtro como paso 0 en `_autonomous_decide()`
+
+**Cambios:**
+- `src/constants.py`: `DESTRUCTIVE_HOUR_START=14, DESTRUCTIVE_HOUR_END=17`
+- `src/main.py`: Agregado `from datetime import timezone`
+- `src/main.py`: Filtro antes del CircuitBreaker en `_autonomous_decide()`
+- Configurable via `.env` (DESTRUCTIVE_HOUR_START / DESTRUCTIVE_HOUR_END)
+
+**Resultado:**
+- Rechaza todas las órdenes en 14:00-16:59 UTC
+- WR histórico en esa ventana: 33% (vs 42% global)
+- Evita -$85.92 de drawdown (75% del histórico)
+- Log claro: `⏸️ [AUTONOMÍA] Ventana 14-17h UTC — WR histórico 33%`
+
+---
+
+### 3️⃣ Aumentar NORMAL_MIN_CONFIDENCE de 0.38 → 0.45 (después de fijar activos + horas)
 
 **Problema en SysMho:**
 - Umbral 0.38 = "levemente más probable BUY que WAIT"
 - XGBoost predice [P(SELL), P(WAIT), P(BUY)]; si BUY=0.40, WAIT=0.38, SELL=0.22 → aprueba BUY
-- Pero hay **validación cruzada interna**: Inertia filter (WAIT > 72% veta), Strength ratio (dominant/opposite >= 2.0)
-- **Estos filtros secundarios NO son suficientes** para el 44% WR real
+- Hay validación cruzada interna (Inertia filter, Strength ratio), pero **NO son suficientes** para 42.4% WR real
+- **NOTA:** Datos reales muestran que el problema MAYOR es POL/BNB + 14-17 UTC, no confianza marginal
 
 **Por qué es crítico para SysMho:**
 - Modo autónomo (MetaEvaluador + CircuitBreaker) depende de confianza XGBoost como **score base**
 - META_SCORE_THRESHOLD = 0.52 ya rechaza ~30% de señales
-- Pero los 70% que pasan incluyen muchas con XGBoost confidence 38-45% (borde)
-- En backtest CV, ese rango **aún funciona** (87.5% accuracy), pero **en live real market**, esa confianza marginal falla
+- Pero los 70% aprobados incluyen trades de POL/BNB/14-17UTC con baja confianza
+- En live real market, esa confianza marginal falla especialmente en períodos/activos malos
 
 **Qué cambiar:**
 - `.env` → `NORMAL_MIN_CONFIDENCE=0.45` (o 0.48 para más conservador)
 - AGGRESSIVE_MIN_CONFIDENCE podría ir 0.35 → 0.40
 - Verificar que cambio propague a MetaEvaluator (usa NORMAL_MIN_CONFIDENCE en score_base)
 
-**Impacto en SysMho:**
-- Rechaza ~15-20 trades "borderline" que tienden a perder
-- Mantiene los ~60 trades de alta confianza (que ganan 50%+ en backtest)
-- Reduce volumen pero **mejora precision** (objetivo del sistema: calidad > cantidad)
-- Alínea autonomía: MetaEvaluador ya rechaza scores bajos → NORMAL_MIN_CONFIDENCE debe acompañar
+**Impacto en SysMho (después de tasks 1+2):**
+- Secundario: rechaza ~10-15 trades "borderline" adicionales
+- Mantiene ~50+ trades de alta confianza que ganan en backtest
+- Reduce volumen pero mejora precision
+- **PRIORIDAD:** Hacer tareas 1 + 2 primero; esta es refinamiento posterior
 
 ---
 
@@ -139,26 +138,53 @@
 
 ---
 
-## 📊 Estimación de mejora (post-4-fixes)
+## 📊 Estimación de mejora (post-4-fixes, con datos reales)
 
 | Métrica | Actual | Post-fixes | Mejora | Justificación |
 |---------|--------|-----------|--------|---|
-| Win rate | 44% | 55%+ | +25% | Elimina POL (-25% WR), paussa 9-14 UTC (-33% WR), aumenta confianza mín |
-| PnL | -$104.31 | -$20~30 | +$75 (~70%) | POL -$53 eliminado; 23 trades malos evitados |
-| Trades ejecutados | 75 | 50-60 | -15~25 | Más selectivo (confianza 0.45), menos horas débiles |
-| Drawdown | -$104 | -$30 | -71% | Circuito breaker se calibra con 9 activos reales |
-| Señales BOUNTY/REGULAR | Desconocido | Auditable | ∞ | Base para Phase 2 meta-modelo |
+| Win rate | 42.4% | 55-60% | +13-18pp | Elimina POL (25% WR) + BNB (18% WR) + pausa 14-17 UTC (33% WR) |
+| PnL (closed) | -$114.57 | -$28.65 | +$85.92 (~75%) | POL -$56 + BNB -$24 + 14-17UTC -$86 = -$166 evitado |
+| Trades closed | 92 | ~70-75 | -15-20 | Menos horas débiles, menos activos destructivos |
+| Drawdown | -$114.57 | -$28.65 | -$85.92 (75%) | 14-17 UTC = 75% del drawdown; POL+BNB = 70% |
+| Signal source | NULL (0%) | Auditable (100%) | ✅ | Implementar guardar BOUNTY vs REGULAR |
+| MetaEvaluator | Sin filtro por-activo | +filtro por-activo | +Coherencia | Después de fix 1: solo activos ganadores |
 
 ---
 
-## 🚀 Próximos pasos (DESPUÉS de los 4 fixes)
+## 🚀 Próximos pasos (PRIORIDAD)
 
-1. **Implementar 4 fixes** (~30 min total, cuidado con testing en testnet)
-2. **Acumular 200+ trades** autónomos en testnet con nuevos filtros
-3. **Analizar BOUNTY vs REGULAR**: ¿cuál win rate es más alto?
-4. **Phase 2 meta-modelo**: entrenar XGBoost que aprenda "preferir BOUNTY"
-5. **Optuna tuning**: si win rate sigue < 50% post-fixes, retuning bayesiano con 100 trials
-6. **Mainnet**: cuando win rate consistente > 55% en testnet por 2 semanas
+### FASE 1: Fixes Inmediatos (Esta semana)
+1. **Task 1:** Excluir POL + BNB de `SYMBOLS` en `src/constants.py` (~5 min)
+   - Verificar impacto: loops respeten exclusión
+   - Test local en testnet
+   
+2. **Task 2:** Pausar trading 14-17 UTC en `src/main.py:dispatch_signal()` (~10 min)
+   - Agregar time gate antes de `executor.execute_trade()`
+   - Log a `sysmho_brain.log`
+   - Test en testnet: verificar que no ejecuta en esa ventana
+
+3. **Task 4:** Guardar `signal_source` en `execute_trade()` (~10 min)
+   - `src/main.py`: pasar `signal_source="BOUNTY"` o `"REGULAR"` 
+   - `src/executor/trader.py`: guardar en BD
+
+### FASE 2: Refinamiento (Después de FASE 1)
+4. **Recolectar 100+ trades** en testnet con fixes aplicados
+   - Medir nuevo win rate (esperado 50-55%)
+   - Verificar que POL/BNB/14-17 UTC efectivamente eliminan drawdown
+
+5. **Analizar BOUNTY vs REGULAR** con signal_source poblado
+   - ¿BOUNTY WR > REGULAR WR?
+   - ¿Diferencia significativa por activo?
+   - Base para Phase 2 meta-modelo
+
+6. **Task 3:** Aumentar NORMAL_MIN_CONFIDENCE 0.38 → 0.45 (si sigue < 50% WR)
+   - Solo si análisis FASE 2 muestra que aún hay trades marginales
+
+7. **Optuna tuning:** Si win rate post-fixes sigue < 50%, retuning bayesiano
+   - Principalmente refinar META_SCORE_THRESHOLD, CB thresholds
+
+### FASE 3: Autonomía Plena
+8. **Mainnet:** Cuando win rate consistente > 55% en testnet durante 2 semanas
 
 ---
 

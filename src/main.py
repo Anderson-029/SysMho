@@ -18,7 +18,7 @@ import asyncio
 import builtins
 import os
 import signal
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 
@@ -447,6 +447,26 @@ class AutonomousBot:
         side = dictamen.get('side', 'BUY')
         direction = 'LONG' if side == 'BUY' else 'SHORT'
 
+        # ── 0. Ventana horaria destructiva ───────────────────────────────
+        # No es veto — eleva el umbral del MetaEvaluador en +0.08.
+        # Buenas señales igual pasan; señales débiles no.
+        # Temporal: cuando by_hour acumule >= 5 trades, el componente
+        # de WR por hora del MetaEvaluador lo maneja automáticamente.
+        from src.constants import (
+            DESTRUCTIVE_HOUR_START, DESTRUCTIVE_HOUR_END, DESTRUCTIVE_HOUR_PENALTY
+        )
+        _dh_start  = int(os.getenv('DESTRUCTIVE_HOUR_START', str(DESTRUCTIVE_HOUR_START)))
+        _dh_end    = int(os.getenv('DESTRUCTIVE_HOUR_END',   str(DESTRUCTIVE_HOUR_END)))
+        _penalty   = float(os.getenv('DESTRUCTIVE_HOUR_PENALTY', str(DESTRUCTIVE_HOUR_PENALTY)))
+        _hour_utc  = datetime.now(timezone.utc).hour
+        _window_penalty = _penalty if _dh_start <= _hour_utc < _dh_end else 0.0
+
+        if _window_penalty > 0:
+            print(
+                f"⚠️ [AUTONOMÍA] {symbol} en ventana {_dh_start}-{_dh_end}h UTC — "
+                f"umbral +{_window_penalty:.2f} (más exigente)"
+            )
+
         # ── 1. CircuitBreaker ────────────────────────────────────────────
         try:
             stats = await self.db.get_daily_stats()
@@ -500,6 +520,7 @@ class AutonomousBot:
         meta_score, approved, reasons = self.meta_evaluator.evaluate(
             signal=dictamen,
             recent_trades=stats.get('recent_trades', []),
+            window_penalty=_window_penalty,
         )
 
         decision = 'APPROVED' if approved else 'REJECTED'
