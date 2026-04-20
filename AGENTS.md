@@ -27,6 +27,12 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 | `sysmho-signals` | Tactical signals view — pending signals, recent history, approval rate and decision context. Use when reviewing trading signal activity. | `.claude/skills/sysmho-signals/SKILL.md` |
 | `sysmho-test` | Runs the complete test suite and reports results with failure context. Use when validating code changes or checking test health. | `.claude/skills/sysmho-test/SKILL.md` |
 
+### Documentation (1)
+
+| Skill | Description | Path |
+|-------|-------------|------|
+| `sysmho-docs` | Generates and audits professional documentation following Diátaxis, ADR (Michael Nygard), Keep-a-Changelog, Google Python Style, OpenAPI 3.0, and C4 Model standards. | `.claude/skills/sysmho-docs/SKILL.md` |
+
 ### Development (6)
 
 | Skill | Description | Path |
