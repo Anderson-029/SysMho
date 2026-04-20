@@ -13,8 +13,10 @@ import xgboost as xgb
 from sklearn.metrics import log_loss
 from sklearn.model_selection import train_test_split
 
+from typing import Optional
+
 from src.ai.trainers.base import BaseTrainer
-from src.constants import MODEL_FEATURES
+from src.constants import MODEL_FEATURES, TRAINING_WINDOW_MONTHS, CANDLES_PER_MONTH_5M
 
 
 class BayesianTuner(BaseTrainer):
@@ -49,7 +51,8 @@ class BayesianTuner(BaseTrainer):
         return log_loss(y_test, preds)
 
     async def tune_model(
-        self, symbol: str, timeframe: str, n_trials: int = 50
+        self, symbol: str, timeframe: str, n_trials: int = 50,
+        window_months: Optional[int] = None
     ) -> dict:
         """
         Ejecuta el estudio y guarda los parámetros óptimos encontrados.
@@ -58,15 +61,21 @@ class BayesianTuner(BaseTrainer):
             symbol: El activo a usar como perfil base (ej. 'BTC/USDT').
             timeframe: La temporalidad a usar.
             n_trials: Cantidad de variaciones a probar.
+            window_months: Meses de datos a usar (sliding window).
 
         Returns:
             Dict con los mejores hiperparámetros encontrados.
         """
+        months = window_months or TRAINING_WINDOW_MONTHS
+        candle_limit = months * CANDLES_PER_MONTH_5M if timeframe == '5m' else None
+
         print(
             f"🎯 Iniciando Overclocking Bayesiano para "
             f"{symbol} ({n_trials} intentos)..."
         )
-        df = await self.engineer.get_master_dataframe(symbol, timeframe)
+        if candle_limit:
+            print(f"📅 Sliding window: últimos {months} meses ({candle_limit:,} velas)")
+        df = await self.engineer.get_master_dataframe(symbol, timeframe, limit=candle_limit)
         if len(df) < 2000:
             print(f"⚠️ Datos insuficientes para tuning en {symbol}.")
             return None

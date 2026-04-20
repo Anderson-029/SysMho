@@ -10,7 +10,7 @@ Each skill is located in `.claude/skills/{name}/SKILL.md` with YAML frontmatter 
 
 Load **only** the skill you need. If the task crosses domains, load max 2–3.
 
-### Operational (11)
+### Operational (12)
 
 | Skill | Description | Path |
 |-------|-------------|------|
@@ -20,11 +20,18 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 | `sysmho-deploy` | Controlled restart — verifies open positions, stops processes, applies pending migrations, starts in order. Use when restarting SysMho safely. | `.claude/skills/sysmho-deploy/SKILL.md` |
 | `sysmho-logs` | Reads and analyzes neural telemetry from the brain log grouped by event type. Use when investigating runtime behavior or errors. | `.claude/skills/sysmho-logs/SKILL.md` |
 | `sysmho-market` | Real-time crypto market context — BTC/ETH trends, funding rates, RSI for all 10 assets and overheating alerts. Use when assessing current market conditions. | `.claude/skills/sysmho-market/SKILL.md` |
+| `sysmho-metrics` | Muestra el pipeline completo de predicción, las 28 features del modelo, umbrales dinámicos del MetaEvaluador por activo y estado actual del CircuitBreaker. Usar para entender qué métricas usa SysMho para decidir si operar. | `.claude/skills/sysmho-metrics/SKILL.md` |
 | `sysmho-migrate` | Applies SQL migrations safely and verifies they were applied correctly. Use when there are pending database migrations. | `.claude/skills/sysmho-migrate/SKILL.md` |
 | `sysmho-performance` | Real performance analysis — KPIs, win rate, PnL, best assets and MetaEvaluator calibration. Use when evaluating trading performance. | `.claude/skills/sysmho-performance/SKILL.md` |
 | `sysmho-retrain` | Orchestrates safe XGBoost retraining — verifies data, backs up old model, retrains and validates metrics. Use when the model needs retraining. | `.claude/skills/sysmho-retrain/SKILL.md` |
 | `sysmho-signals` | Tactical signals view — pending signals, recent history, approval rate and decision context. Use when reviewing trading signal activity. | `.claude/skills/sysmho-signals/SKILL.md` |
 | `sysmho-test` | Runs the complete test suite and reports results with failure context. Use when validating code changes or checking test health. | `.claude/skills/sysmho-test/SKILL.md` |
+
+### Documentation (1)
+
+| Skill | Description | Path |
+|-------|-------------|------|
+| `sysmho-docs` | Generates 16 real documentation files — 6 ADRs, 4 How-to guides, API Reference (35+ endpoints), Architecture (C4 Mermaid), Changelog, Configuration reference, RFC-style ML spec, and Health Report. Standards: Diátaxis, ADR (Michael Nygard), Keep-a-Changelog, OpenAPI 3.0, C4 Model. | `.claude/skills/sysmho-docs/SKILL.md` |
 
 ### Development (6)
 
@@ -36,6 +43,20 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 | `sysmho-pre-commit` | Pre-save consistency checklist — versions, SQL injection risks, stale constants, dead imports. Use before committing changes. | `.claude/skills/sysmho-pre-commit/SKILL.md` |
 | `sysmho-refactor` | Analyzes a module and lists concrete cleanup opportunities with code evidence — no changes without approval. Use when looking for refactoring targets. | `.claude/skills/sysmho-refactor/SKILL.md` |
 | `sysmho-test-coverage` | Maps which modules have tests and which critical functions are not covered. Use when deciding which tests to write next. | `.claude/skills/sysmho-test-coverage/SKILL.md` |
+
+### Analytics (2) — *PLANNED PHASE 2*
+
+| Skill | Description | Path | Status |
+|-------|-------------|------|--------|
+| `sysmho-backtest` | Simulate historical signals — if the model had traded the last 30 days, what would the PnL be? Useful for validation before production. | `.claude/skills/sysmho-backtest/SKILL.md` | 🔵 Planned |
+| `sysmho-feature-importance` | Rank the 27 features by importance in predictions. Identify low-impact features for potential cleanup. | `.claude/skills/sysmho-feature-importance/SKILL.md` | 🔵 Planned |
+
+### Reporting (2) — *PLANNED PHASE 3*
+
+| Skill | Description | Path | Status |
+|-------|-------------|------|--------|
+| `sysmho-risk-report` | Complete risk dashboard — drawdown analysis, exposure limits, Circuit Breaker state, maximum loss scenario. | `.claude/skills/sysmho-risk-report/SKILL.md` | 🔵 Planned |
+| `sysmho-weekly` | Weekly summary — PnL trend, win rate by day, best/worst assets, signals rejected vs approved, key insights. | `.claude/skills/sysmho-weekly/SKILL.md` | 🔵 Planned |
 
 ---
 

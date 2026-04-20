@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from src.analysis.indicators import TechnicalIndicators
-from src.constants import MACRO_TIMEFRAMES, SYMBOLS
+from src.constants import MACRO_TIMEFRAMES, SYMBOLS, SYMBOL_ENCODING
 from src.database.repository import DatabaseRepository
 
 
@@ -97,7 +97,11 @@ class FeatureEngineer:
             else:
                 df[f'{prefix}_macd_diff_pct'] = 0.0
 
-        # PASO 4: Sanitización Extrema anti-XGBoost Crash
+        # PASO 4: Identidad del activo (feature #28)
+        # El cerebro aprende dinámicas específicas por símbolo sin múltiples modelos.
+        df['symbol_encoded'] = SYMBOL_ENCODING.get(symbol, 0)
+
+        # PASO 5: Sanitización Extrema anti-XGBoost Crash
         df.replace([np.inf, -np.inf], np.nan, inplace=True)
         df.dropna(inplace=True)
 

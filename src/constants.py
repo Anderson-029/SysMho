@@ -23,6 +23,22 @@ SYMBOLS = [
     'POL/USDT',
 ]
 
+# Encoding estable de símbolo → entero para feature del modelo.
+# El modelo aprende dinámicas específicas por activo.
+# NO cambia aunque se reordene SYMBOLS.
+SYMBOL_ENCODING = {
+    'BTC/USDT': 0,
+    'ETH/USDT': 1,
+    'BNB/USDT': 2,
+    'SOL/USDT': 3,
+    'XRP/USDT': 4,
+    'ADA/USDT': 5,
+    'AVAX/USDT': 6,
+    'LINK/USDT': 7,
+    'DOT/USDT': 8,
+    'POL/USDT': 9,
+}
+
 # ============================================================
 # Temporalidades
 # ============================================================
@@ -37,6 +53,12 @@ MIN_CANDLES_FOR_TUNING = 2000
 MIN_CANDLES_FOR_PREDICTION = 20
 LABEL_THRESHOLD = 0.007  # 0.7%: movimiento real en futuros 5m (antes 0.2% = ruido)
 TRAIN_TEST_SPLIT = 0.15  # 15% para test, 85% para entrenamiento
+
+# Sliding Window: meses de datos a usar en cada retrain.
+# El modelo aprende el mercado ACTUAL, olvidando condiciones obsoletas.
+# 3 meses = 25,920 velas 5m (30d × 24h × 12 velas/h)
+TRAINING_WINDOW_MONTHS = 3
+CANDLES_PER_MONTH_5M = 8640  # 30 × 24 × 12
 
 DEFAULT_MODEL_PARAMS = {
     'n_estimators': 235,       # Óptimo Optuna (antes 150)
@@ -94,6 +116,11 @@ MODEL_FEATURES = [
     'h4_adx',           # Fuerza de tendencia 4h
     'h4_bb_pband',      # Posición en Bollinger 4h
     'h4_atr_pct',       # Volatilidad 4h como % del precio
+
+    # Identidad del activo (feature #28)
+    # Permite al cerebro aprender dinámicas específicas por símbolo.
+    # Encoding estable definido en SYMBOL_ENCODING (no cambia al reordenar SYMBOLS).
+    'symbol_encoded',
 ]
 
 # ============================================================
@@ -124,6 +151,15 @@ NOTIONAL_CAP_RATIO = 0.12  # Max 12% del capital por trade (antes 25%; 3 alertas
 EXPOSURE_LIMIT_RATIO = 0.50  # Alerta si > 50% en posiciones
 CAPITAL_SHIELD_RATIO = 0.10  # Escudo SL mínimo 10% del precio
 CAPITAL_SHIELD_THRESHOLD = 0.90  # Liquidación preventiva 90%
+
+# ============================================================
+# Ventana Horaria Destructiva (UTC)
+# Rango [start, end) con WR históricamente bajo (33% vs 42% global).
+# Configurable en .env: DESTRUCTIVE_HOUR_START / DESTRUCTIVE_HOUR_END
+# ============================================================
+DESTRUCTIVE_HOUR_START   = 14   # 14:00 UTC inclusive
+DESTRUCTIVE_HOUR_END     = 17   # 17:00 UTC exclusive
+DESTRUCTIVE_HOUR_PENALTY = 0.08 # Umbral extra en esa ventana (temporal hasta acumular datos por hora)
 
 # ============================================================
 # Monitor y Ciclos

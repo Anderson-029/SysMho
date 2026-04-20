@@ -266,12 +266,24 @@ class TradeExecutor:
                 if amt != 0:
                     full_symbol = pos['symbol']
                     symbol = full_symbol.split(':')[0]
+                    # Usar pos['side'] ('long'/'short') como fuente primaria del side.
+                    # Binance Demo puede retornar contracts siempre positivo para SHORT,
+                    # haciendo que amt > 0 sea incorrecto para determinar dirección.
+                    ccxt_side = (pos.get('side') or '').lower()
+                    if ccxt_side == 'long':
+                        side = 'BUY'
+                    elif ccxt_side == 'short':
+                        side = 'SELL'
+                    else:
+                        # Fallback: usar signo de positionAmt raw de Binance si está disponible
+                        raw_amt = float(pos.get('info', {}).get('positionAmt', amt))
+                        side = 'BUY' if raw_amt > 0 else 'SELL'
                     details[symbol] = {
                         'pnl': float(pos.get('unrealizedPnl', 0.0)),
                         'mark_price': float(pos.get('markPrice', 0.0)),
                         'entry_price': float(pos.get('entryPrice', 0.0)),
                         'leverage': float(pos.get('leverage') or 1.0),
-                        'side': 'BUY' if amt > 0 else 'SELL',
+                        'side': side,
                         'quantity': abs(amt),
                         'collateral': float(pos.get('initialMargin', 0.0))
                     }
