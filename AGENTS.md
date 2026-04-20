@@ -31,7 +31,7 @@ Load **only** the skill you need. If the task crosses domains, load max 2–3.
 
 | Skill | Description | Path |
 |-------|-------------|------|
-| `sysmho-docs` | Generates and audits professional documentation following Diátaxis, ADR (Michael Nygard), Keep-a-Changelog, Google Python Style, OpenAPI 3.0, and C4 Model standards. | `.claude/skills/sysmho-docs/SKILL.md` |
+| `sysmho-docs` | Generates 16 real documentation files — 6 ADRs, 4 How-to guides, API Reference (35+ endpoints), Architecture (C4 Mermaid), Changelog, Configuration reference, RFC-style ML spec, and Health Report. Standards: Diátaxis, ADR (Michael Nygard), Keep-a-Changelog, OpenAPI 3.0, C4 Model. | `.claude/skills/sysmho-docs/SKILL.md` |
 
 ### Development (6)
 
