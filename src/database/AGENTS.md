@@ -31,6 +31,7 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 | `autonomous_decisions` | `symbol`, `decision`, `meta_score`, `reason`, `created_at` | Log of MetaEvaluator approve/reject actions |
 | `portfolio` | `total_balance`, `available_balance`, `in_positions`, `total_pnl`, `recorded_at` | Portfolio state snapshots |
 | `sentiment_data` | `symbol`, `funding_rate`, `open_interest`, `obi_20`, `updated_at` | Funding rate + order book imbalance |
+| `gemini_market_context` | `sentiment_score`, `whale_pressure`, `macro_bias`, `news_risk_level`, `optimal_hour`, `llm_veto`, `created_at` | **Gemini Intelligence reports** — market investigation results stored for MetaEvaluator Component 6 |
 | `model_performance` | `model_name`, `symbol`, `accuracy`, `precision_score`, `recall`, `total_predictions`, `created_at` | Training metrics per model version |
 | `risk_log` | `symbol`, `reason`, `action`, `created_at` | Risk manager rejection log |
 | `meta_stats` | `symbol`, `win_rate`, `win_rate_by_hour`, `confidence_calibration`, `updated_at` | SelfLearner statistics (also stored in `src/ai/models/meta_stats.json`) |
@@ -87,6 +88,17 @@ ORDER BY created_at DESC
 LIMIT 10;
 ```
 
+### Latest Gemini Intelligence report (NEW in v15.3.0)
+
+```sql
+SELECT created_at, sentiment_score, whale_pressure, macro_bias, 
+       news_risk_level, optimal_hour, llm_veto, was_reinvestigated, 
+       reuse_count, gemini_reasoning
+FROM gemini_market_context
+ORDER BY created_at DESC
+LIMIT 1;
+```
+
 ### Last telemetry / data freshness
 
 ```sql
@@ -109,6 +121,7 @@ ORDER BY minutes_ago DESC;
 | `migration_v14_9_0.sql` | `alert_category` and `score` columns to `pending_approvals` |
 | `migration_v15_0_0.sql` | Marks v2 models deprecated; adds index on `model_performance.model_name` |
 | `migration_v15_2_0.sql` | Creates `autonomous_decisions` and `meta_stats` tables |
+| `migration_v15_3_0.sql` | Creates `gemini_market_context` table — Gemini Intelligence Layer (sentiment, whale_pressure, macro_bias, news_risk_level, llm_veto, sources, etc.) |
 
 **How to apply**: `uv run db-migrate` for native PostgreSQL (asyncpg, pure Python) or `uv run db-migrate-docker` for Docker PostgreSQL (docker exec psql). Both are idempotent. Alternatively, use the `sysmho-migrate` skill (`.claude/skills/sysmho-migrate/SKILL.md`) for guided application, or apply manually: `psql $DATABASE_URL -f src/database/migration_vX_Y_Z.sql`.
 

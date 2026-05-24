@@ -1,7 +1,7 @@
 [project]
 name = "sysmho"
-version = "15.2.0"
-description = "Neural Combat Financial System — Autonomous crypto trading bot with AI"
+version = "15.3.0"
+description = "Neural Combat Financial System — Autonomous crypto trading bot with AI + Gemini Intelligence"
 requires-python = ">=3.12"
 dependencies = [
     # APIs and Connectivity
@@ -24,6 +24,7 @@ dependencies = [
     "uvicorn>=0.27.1",
     "pydantic>=2.6.3",
     "httpx>=0.27.0",
+    "google-genai>=2.6.0",
 ]
 
 [project.optional-dependencies]

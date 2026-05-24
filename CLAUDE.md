@@ -1,8 +1,8 @@
-# CLAUDE.md — SysMho v15.2.0
+# CLAUDE.md — SysMho v15.3.0
 
-**SysMho v15.2.0** — Neural Combat Financial System.  
-Autonomous crypto trading bot on Binance Futures with AI (XGBoost v3, 27 features).  
-Stack: Python 3.12 + FastAPI + PostgreSQL + XGBoost + CCXT Pro.
+**SysMho v15.3.0** — Neural Combat Financial System with Gemini Intelligence.  
+Autonomous crypto trading bot on Binance Futures with AI (XGBoost v3 + Gemini Web Intelligence, 28 features).  
+Stack: Python 3.12 + FastAPI + PostgreSQL + XGBoost + Gemini API + CCXT Pro.
 
 ---
 
@@ -56,8 +56,9 @@ These files contain domain-specific architecture and should be read on-demand:
 |------|--------|
 | `AGENTS.md` (raíz) | Skills index + module navigation |
 | `src/AGENTS.md` | Module architecture, entry points, code conventions, dependency flow |
-| `src/ai/AGENTS.md` | ML pipeline, model files, training, MetaEvaluator, SelfLearner |
-| `src/database/AGENTS.md` | DB schema, frequent queries, migrations, connection setup |
+| `src/intelligence/AGENTS.md` | Gemini Intelligence Layer, web investigation, context reporting |
+| `src/ai/AGENTS.md` | ML pipeline, model files, training, MetaEvaluator (6 components), SelfLearner |
+| `src/database/AGENTS.md` | DB schema, frequent queries, migrations, `gemini_market_context` table |
 | `src/dashboard/AGENTS.md` | API routers, authentication, frontend, badge indicators |
 
 **Why separate?** Avoid loading all docs at once. Jump to what you need. Reduces token cost per conversation.
@@ -68,11 +69,12 @@ These files contain domain-specific architecture and should be read on-demand:
 
 | File | Role |
 |------|------|
-| `src/constants.py` | All numeric parameters, thresholds, feature list, symbol portfolio |
+| `src/constants.py` | All numeric parameters, thresholds, feature list, symbol portfolio, Gemini constants |
 | `src/paths.py` | Centralized data paths (models, logs, IPC files) |
 | `src/runtime_config.py` | IPC read/write (autonomous mode, CB reset, PnL reset) |
-| `.env` | Binance keys, DB credentials, CB/Meta thresholds, toggles (never committed) |
-| `.env.example` | Template for new variables |
+| `src/intelligence/gemini_agent.py` | GeminiIntelligenceAgent — web investigation, context generation |
+| `.env` | Binance keys, DB credentials, CB/Meta thresholds, **GEMINI_API_KEY**, toggles (never committed) |
+| `.env.example` | Template for new variables (including GEMINI_API_KEY, GEMINI_MIN_REINVESTIGATE_INTERVAL) |
 
 ---
 
@@ -123,6 +125,7 @@ These files contain domain-specific architecture and should be read on-demand:
 
 | Version | Date | Notes |
 |---------|------|-------|
+| v15.3.0 | 2026-05-23 | Gemini Intelligence Layer, web context investigation, 6-component MetaEvaluador, 28 features |
 | v15.2.0 | 2026-04-04 | Gap Filler, PnL diario, Docker-first, 87.5% accuracy |
 | v15.0.0 | 2026-03-XX | Autonomous mode, MetaEvaluator, Circuit Breaker, SelfLearner |
 | v14.x.x | Before | Manual-only mode, no autonomy |
@@ -154,6 +157,6 @@ uv run sysmho-performance
 
 ---
 
-**Last updated**: 2026-04-06  
+**Last updated**: 2026-05-23  
 **Maintained by**: Anderson  
-**Next tasks**: Resolve Binance mainnet verification, accumulate 200+ autonomous trades for Phase 2 meta-model training.
+**Next tasks**: Validate Gemini Intelligence production readiness, accumulate 200+ autonomous trades with Gemini context for Phase 2 meta-model training.

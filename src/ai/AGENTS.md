@@ -10,22 +10,38 @@
 ## Pipeline
 
 ```
-PostgreSQL (market_data, sentiment_data)
-  └── FeatureEngineer.get_master_dataframe()  [analysis/features.py]
-        └── TechnicalIndicators.add_all_indicators()
-        └── macro context injection (1h / 4h merge_asof)
-        └── institutional features (funding_rate, obi_20)
-        └── swarm intelligence (cross-symbol RSI/MACD averages)
-  └── 27 feature vector (MODEL_FEATURES from constants.py)
-        └── ModelPredictor.predict_signal()  [ai/predictor.py]
-              └── XGBoost predict_proba → [P(SELL), P(WAIT), P(BUY)]
-              └── Inertia filter (WAIT > 72% → veto)
-              └── Strength ratio (dominant/opposite ≥ 2.0)
-              └── High conviction flag (≥ 55% → BOUNTY)
-        └── RiskManager.evaluate_signal()  [risk/manager.py]
-              └── Position sizing, Notional Cap 12%, Exposure Limit 50%
-        └── [MANUAL] Dashboard approval  |  [AUTONOMOUS] MetaEvaluator + CircuitBreaker
-              └── TradeExecutor.execute_trade()  [executor/trader.py]
+PostgreSQL (market_data, sentiment_data, gemini_market_context)
+  │
+  ├─ FeatureEngineer.get_master_dataframe()  [analysis/features.py]
+  │   └── TechnicalIndicators.add_all_indicators()
+  │   └── macro context injection (1h / 4h merge_asof)
+  │   └── institutional features (funding_rate, obi_20)
+  │   └── swarm intelligence (cross-symbol RSI/MACD averages)
+  │   └── 28 feature vector (MODEL_FEATURES from constants.py)
+  │
+  ├─ ModelPredictor.predict_signal()  [ai/predictor.py]
+  │   └── XGBoost predict_proba → [P(SELL), P(WAIT), P(BUY)]
+  │   └── Inertia filter (WAIT > 72% → veto)
+  │   └── Strength ratio (dominant/opposite ≥ 2.0)
+  │   └── High conviction flag (≥ 55% → BOUNTY)
+  │
+  ├─ RiskManager.evaluate_signal()  [risk/manager.py]
+  │   └── Position sizing, Notional Cap 12%, Exposure Limit 50%
+  │
+  ├─ GeminiIntelligenceAgent.get_context_report()  [intelligence/gemini_agent.py]
+  │   └── Investigates web sources at 3:45 of cycle
+  │   └── Returns: sentiment_score, whale_pressure, macro_bias, news_risk_level, optimal_hour, llm_veto
+  │
+  └─ [MANUAL] Dashboard approval  |  [AUTONOMOUS] MetaEvaluator (6 components) + CircuitBreaker
+        └── MetaEvaluator combines:
+        │    1. Global win rate
+        │    2. Hourly win rate
+        │    3. Confidence calibration
+        │    4. Loss streak penalty
+        │    5. Base confidence
+        │    6. Gemini context score  ← NEW
+        └── If Gemini llm_veto=True → blocks regardless of XGBoost
+        └── TradeExecutor.execute_trade()  [executor/trader.py]
 ```
 
 ---
@@ -35,9 +51,9 @@ PostgreSQL (market_data, sentiment_data)
 | Property | Value |
 |----------|-------|
 | Algorithm | XGBoost (multi-class) |
-| Version | v3 |
+| Version | v3 (retrained with Gemini features) |
 | Classes | 0=SELL, 1=WAIT, 2=BUY |
-| Features | 27 (see `MODEL_FEATURES` in `src/constants.py`) |
+| Features | 28 (27 technical/macro + 1 Gemini context—see `MODEL_FEATURES` in `src/constants.py`) |
 | Assets | 10 (BTC, ETH, BNB, SOL, XRP, ADA, AVAX, LINK, DOT, POL — all /USDT) |
 | CV strategy | TimeSeriesSplit 5-fold |
 
@@ -87,19 +103,27 @@ For orchestrated retraining with safety checks, use the `sysmho-retrain` skill.
 
 **File**: `src/ai/meta_evaluator.py`
 
-The second-layer statistical filter that decides autonomous approval. Evaluates 5 components:
+The second-layer statistical filter that decides autonomous approval. Evaluates 6 components:
 
-| Component | What it measures |
-|-----------|-----------------|
-| Global win rate | Historical win rate of closed trades |
-| Hourly win rate | Win rate by UTC hour and direction for this symbol |
-| Confidence calibration | Predicted confidence vs actual outcome alignment |
-| Loss streak | Recent consecutive losses (penalizes after bad streaks) |
-| Base confidence | Raw XGBoost confidence of the signal |
+| Component | What it measures | Source |
+|-----------|-----------------|--------|
+| Global win rate | Historical win rate of closed trades | meta_stats.json |
+| Hourly win rate | Win rate by UTC hour and direction for this symbol | meta_stats.json |
+| Confidence calibration | Predicted confidence vs actual outcome alignment | meta_stats.json |
+| Loss streak | Recent consecutive losses (penalizes after bad streaks) | recent trades |
+| Base confidence | Raw XGBoost confidence of the signal | XGBoost output |
+| **Gemini context** | **Market sentiment, whale pressure, macro bias, news risk** | **gemini_market_context table** |
+
+**Gemini component** (NEW in v15.3.0):
+- Calculates weighted score from: `sentiment_norm * 0.30 + whale_norm * 0.25 + macro_norm * 0.25 + news_norm * 0.10 + hour_score * 0.10`
+- **Immediate veto**: If `llm_veto=True` and `GEMINI_VETO_BLOCKS_TRADE=True` → returns `(0.0, False)` (trade blocked regardless of XGBoost confidence)
+- **Fallback**: If Gemini unavailable/timeout → falls back to 5-component scoring (zero regression)
 
 **Threshold**: `meta_score >= META_SCORE_THRESHOLD` (default `0.52` in `constants.py`) → APPROVED. Below → REJECTED.
 
-Reads from `src/ai/models/meta_stats.json`. Stats are reloaded after each closed trade.
+Reads from:
+- `src/ai/models/meta_stats.json` (stats reloaded after each closed trade)
+- `src/database/gemini_market_context` (latest Gemini report fetched before evaluation)
 
 ---
 
@@ -112,4 +136,4 @@ Updates `meta_stats.json` after each trade closure. Records:
 - Win rate by hour (UTC) and direction
 - Confidence calibration buckets (predicted vs actual)
 
-**Phase 2 (pending)**: When 200+ trades are available, train a second-level XGBoost meta-model on these statistics — replacing the 5 heuristic components with a learned model.
+**Phase 2 (pending)**: When 200+ trades are available with Gemini context, train a second-level XGBoost meta-model on these 6 components — replacing the heuristic scoring with a learned decision boundary.

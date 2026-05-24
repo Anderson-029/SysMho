@@ -65,6 +65,7 @@ class MetaEvaluator:
         signal: dict,
         recent_trades: Optional[List[dict]] = None,
         window_penalty: float = 0.0,
+        gemini_context: Optional[dict] = None,
     ) -> Tuple[float, bool, List[str]]:
         """
         Evalúa una señal y devuelve (meta_score, approved, reasons).
@@ -74,6 +75,7 @@ class MetaEvaluator:
             recent_trades: Últimas N operaciones cerradas (para racha y contexto).
             window_penalty: Penalty adicional al umbral dinámico (ej. 0.08 en ventana
                             horaria destructiva). Temporal hasta acumular datos by_hour.
+            gemini_context: ContextReport de Gemini Intelligence (opcional).
 
         Returns:
             meta_score [0..1], approved (bool), reasons (lista de strings)
@@ -155,6 +157,47 @@ class MetaEvaluator:
         # ── 5. Confianza base del modelo principal ───────────────────────
         # Siempre incluir como componente con peso moderado
         score_components.append(min(confidence * 1.2, 1.0))
+
+        # ── 6. Contexto Gemini Intelligence (si disponible) ──────────────
+        if gemini_context:
+            from src.constants import GEMINI_VETO_BLOCKS_TRADE
+
+            # Veto inmediato: evento extraordinario detectado por Gemini
+            if gemini_context.get('llm_veto') and GEMINI_VETO_BLOCKS_TRADE:
+                veto_reason = gemini_context.get('gemini_reasoning', 'Veto Gemini')
+                reasons.append(f'🚫 Gemini VETO: {veto_reason}')
+                return 0.0, False, reasons
+
+            # Normalizar scores de Gemini a rango [0..1]
+            sentiment  = float(gemini_context.get('sentiment_score', 0.0))
+            whale      = int(gemini_context.get('whale_pressure', 0))
+            macro      = int(gemini_context.get('macro_bias', 0))
+            news_risk  = int(gemini_context.get('news_risk_level', 0))
+            optimal_h  = bool(gemini_context.get('optimal_hour', True))
+
+            sentiment_norm = (sentiment + 1.0) / 2.0   # -1→0.0, 0→0.5, +1→1.0
+            whale_norm     = (whale + 1) / 2.0
+            macro_norm     = (macro + 1) / 2.0
+            news_norm      = 1.0 - (news_risk / 2.0)   # 0→1.0, 1→0.5, 2→0.0
+            hour_score     = 0.60 if optimal_h else 0.40
+
+            gemini_score = round(
+                sentiment_norm * 0.30 +
+                whale_norm     * 0.25 +
+                macro_norm     * 0.25 +
+                news_norm      * 0.10 +
+                hour_score     * 0.10,
+                4
+            )
+            score_components.append(gemini_score)
+
+            whale_label = 'BUY' if whale == 1 else ('SELL' if whale == -1 else 'NEUTRAL')
+            macro_label = 'BULL' if macro == 1 else ('BEAR' if macro == -1 else 'NEUTRAL')
+            reasons.append(
+                f"🔍 Gemini: sentiment={sentiment:+.2f} "
+                f"whale={whale_label} macro={macro_label} "
+                f"score={gemini_score:.3f}"
+            )
 
         # ── Calcular meta_score final ────────────────────────────────────
         if score_components:

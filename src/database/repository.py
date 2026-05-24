@@ -498,3 +498,59 @@ class DatabaseRepository:
             'recent_trades': recent,
             'total_balance': total_bal,
         }
+
+    async def save_gemini_context(self, report: dict) -> None:
+        """Guarda el ContextReport de Gemini en BD."""
+        import json as _json
+        query = '''
+            INSERT INTO gemini_market_context (
+                sentiment_score, whale_pressure, macro_bias,
+                news_risk_level, optimal_hour, llm_veto,
+                significant_changes, sources_checked,
+                full_report, gemini_reasoning,
+                was_reinvestigated, reuse_count
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        '''
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                query,
+                report.get('sentiment_score', 0.0),
+                report.get('whale_pressure', 0),
+                report.get('macro_bias', 0),
+                report.get('news_risk_level', 0),
+                report.get('optimal_hour', True),
+                report.get('llm_veto', False),
+                _json.dumps(report.get('significant_changes', {})),
+                report.get('sources_checked', []),
+                _json.dumps(report.get('full_report', {})),
+                report.get('gemini_reasoning', ''),
+                report.get('was_reinvestigated', True),
+                report.get('reuse_count', 0),
+            )
+
+    async def get_latest_gemini_context(self) -> Optional[dict]:
+        """Obtiene el reporte más reciente de Gemini."""
+        import json as _json
+        import time as _time
+        query = '''
+            SELECT sentiment_score, whale_pressure, macro_bias,
+                   news_risk_level, optimal_hour, llm_veto,
+                   significant_changes, sources_checked,
+                   full_report, gemini_reasoning,
+                   was_reinvestigated, reuse_count,
+                   created_at
+            FROM gemini_market_context
+            ORDER BY created_at DESC
+            LIMIT 1
+        '''
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(query)
+        if not row:
+            return None
+        result = dict(row)
+        result['significant_changes'] = _json.loads(result.get('significant_changes') or '{}')
+        result['full_report'] = _json.loads(result.get('full_report') or '{}')
+        result['sources_checked'] = list(result.get('sources_checked') or [])
+        result['sentiment_score'] = float(result.get('sentiment_score') or 0.0)
+        result['_timestamp'] = result['created_at'].timestamp() if result.get('created_at') else _time.time()
+        return result

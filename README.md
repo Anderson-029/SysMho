@@ -1,11 +1,11 @@
-# SysMho v15.2.0 — Sistema de Trading Autónomo
+# SysMho v15.3.0 — Sistema de Trading Autónomo con Gemini Intelligence
 
-> Bot de trading algorítmico en Binance Futures con IA (XGBoost v3, 27 features).
-> **Estado:** Operacional | **Última actualización:** Abril 4, 2026
+> Bot de trading algorítmico en Binance Futures con IA (XGBoost v3 + Gemini Web Intelligence, 28 features).
+> **Estado:** Operacional | **Última actualización:** Mayo 23, 2026
 
 ## ¿Qué es SysMho?
 
-SysMho es un sistema de trading algorítmico para futuros perpetuos en Binance. Combina análisis técnico multi-timeframe, inteligencia colectiva en 10 activos, modelo XGBoost entrenado con 27 features, control matemático de riesgo estricto, y motor de decisión autónomo con aprendizaje continuo.
+SysMho es un sistema de trading algorítmico para futuros perpetuos en Binance. Combina análisis técnico multi-timeframe, inteligencia colectiva en 10 activos, modelo XGBoost entrenado con 28 features, investigación de contexto de mercado con Gemini Intelligence (acceso web a fuentes públicas), control matemático de riesgo estricto, y motor de decisión autónomo con aprendizaje continuo.
 
 **Dos modos operacionales:**
 - **Manual**: Cada señal requiere aprobación humana via dashboard.

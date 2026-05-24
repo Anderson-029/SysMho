@@ -35,11 +35,14 @@ from src.constants import (
     BOUNTY_WATCHER_INTERVAL_SECONDS,
     SIGNAL_SCANNER_SECONDS,
     PENDING_SIGNAL_TIMEOUT_SECONDS,
+    GEMINI_START_OFFSET_SECONDS,
+    GEMINI_MAX_WAIT_SECONDS,
 )
 from src.database.repository import DatabaseRepository
 from src.executor.circuit_breaker import CircuitBreaker
 from src.executor.monitor import PositionMonitor
 from src.executor.trader import TradeExecutor
+from src.intelligence import GeminiIntelligenceAgent
 from src.risk.manager import RiskManager
 
 # ---- Configuración de autonomía ----
@@ -114,6 +117,7 @@ class AutonomousBot:
         self.circuit_breaker = CircuitBreaker()
         self.meta_evaluator = MetaEvaluator()
         self.self_learner = SelfLearner()
+        self.gemini_agent = GeminiIntelligenceAgent()
 
         print("\n" + "=" * 55)
         print("🛡️  [MODO SEGURO ACTIVO — 2% Riesgo]")
@@ -246,6 +250,85 @@ class AutonomousBot:
 
         self.active_handlers.add(pending_id)
         asyncio.create_task(self._process_signal_task(symbol, pending_id))
+
+    # ------------------------------------------------------------------ #
+    #  GEMINI INTELLIGENCE LOOP — MINUTO 3:45 DE CADA CICLO              #
+    # ------------------------------------------------------------------ #
+
+    async def _gemini_intelligence_loop(self) -> None:
+        """
+        Corre en paralelo con el scanner 5m.
+        En cada ciclo espera hasta el segundo 225 (minuto 3:45) y lanza
+        la investigación de mercado con Gemini. El reporte queda en BD
+        listo para que XGBoost lo use al minuto 5.
+        """
+        import time as _time
+        print("🔍 [GEMINI] Intelligence Loop iniciado — investigación en minuto 3:45")
+
+        while self.is_running:
+            cycle_start = _time.time()
+            try:
+                # Esperar hasta el segundo 225 del ciclo (minuto 3:45)
+                while _time.time() - cycle_start < GEMINI_START_OFFSET_SECONDS:
+                    if not self.is_running:
+                        return
+                    await asyncio.sleep(5)
+
+                hour_utc = datetime.now(timezone.utc).hour
+
+                # Contexto de BD para enriquecer el prompt
+                db_context = await self._build_gemini_db_context()
+
+                # Obtener reporte anterior (para lógica de re-investigación)
+                try:
+                    last_report = await self.db.get_latest_gemini_context()
+                except Exception:
+                    last_report = None
+
+                # Ejecutar investigación con timeout
+                report = await asyncio.wait_for(
+                    self.gemini_agent.get_context_report(
+                        last_report, hour_utc, db_context
+                    ),
+                    timeout=GEMINI_MAX_WAIT_SECONDS,
+                )
+
+                await self.db.save_gemini_context(report)
+
+                reused = not report.get('was_reinvestigated', True)
+                tag = 'REUTILIZADO' if reused else 'NUEVO'
+                print(
+                    f"🔍 [GEMINI] Reporte {tag} — "
+                    f"veto={report['llm_veto']} "
+                    f"sentiment={report['sentiment_score']:+.2f} "
+                    f"macro={'BULL' if report['macro_bias']==1 else 'BEAR' if report['macro_bias']==-1 else 'NEUTRAL'}"
+                )
+
+            except asyncio.TimeoutError:
+                print("⚠️ [GEMINI] Timeout — XGBoost operará con sus 28 features")
+            except Exception as e:
+                print(f"⚠️ [GEMINI ERROR]: {e}")
+
+            # Esperar hasta completar el ciclo de 5 minutos
+            elapsed = _time.time() - cycle_start
+            remaining = SIGNAL_SCAN_INTERVAL_SECONDS - elapsed
+            await asyncio.sleep(max(remaining, 0))
+
+    async def _build_gemini_db_context(self) -> str:
+        """Construye contexto de BD para enriquecer el prompt de Gemini."""
+        try:
+            stats = await self.db.get_daily_stats()
+            hour_utc = datetime.now(timezone.utc).hour
+            lines = [
+                f"Hora actual UTC: {hour_utc}:00",
+                f"Trades hoy: {stats.get('trades_today', 0)}",
+                f"PnL diario: {stats.get('daily_pnl_pct', 0)*100:+.2f}%",
+                f"Pérdidas consecutivas: {stats.get('consecutive_losses', 0)}",
+                f"Balance: ${stats.get('total_balance', 0):.2f}",
+            ]
+            return ' | '.join(lines)
+        except Exception:
+            return ''
 
     # ------------------------------------------------------------------ #
     #  SCANNER REGULAR — TOP 3 CADA 5 MINUTOS                            #
@@ -517,10 +600,15 @@ class AutonomousBot:
 
         # ── 2. MetaEvaluator ─────────────────────────────────────────────
         self.meta_evaluator.reload_stats()
+        try:
+            gemini_context = await self.db.get_latest_gemini_context()
+        except Exception:
+            gemini_context = None
         meta_score, approved, reasons = self.meta_evaluator.evaluate(
             signal=dictamen,
             recent_trades=stats.get('recent_trades', []),
             window_penalty=_window_penalty,
+            gemini_context=gemini_context,
         )
 
         decision = 'APPROVED' if approved else 'REJECTED'
@@ -905,6 +993,7 @@ class AutonomousBot:
             asyncio.create_task(self._auto_train_loop()),
             asyncio.create_task(self._learning_loop()),
             asyncio.create_task(self.monitor.start_monitoring()),
+            asyncio.create_task(self._gemini_intelligence_loop()),
         ]
 
         # WebSocket de velas para los 3 timeframes de cada activo

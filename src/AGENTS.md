@@ -11,12 +11,13 @@
 
 | Directory | Responsibility | Main Files |
 |-----------|---------------|------------|
-| `ai/` | ML pipeline: predict, train, evaluate, self-learn | `predictor.py`, `trainer.py`, `meta_evaluator.py`, `self_learner.py`, `backtest.py` |
-| `analysis/` | Technical indicators and feature engineering (27 features) | `indicators.py`, `features.py` |
+| `ai/` | ML pipeline: predict, train, evaluate, self-learn (28 features with Gemini context) | `predictor.py`, `trainer.py`, `meta_evaluator.py`, `self_learner.py`, `backtest.py` |
+| `analysis/` | Technical indicators and feature engineering (28 features) | `indicators.py`, `features.py` |
 | `collector/` | Real-time data collection from Binance (always mainnet) | `websocket.py`, `market_data.py`, `backfill.py`, `gap_filler.py` |
 | `dashboard/` | FastAPI REST API + Vanilla JS frontend on port 8000 | `api.py`, `deps.py`, `routes/`, `static/` |
-| `database/` | asyncpg repository, DDL schema, SQL migrations | `repository.py`, `schema.sql`, `migration_v*.sql` |
+| `database/` | asyncpg repository, DDL schema, SQL migrations | `repository.py`, `schema.sql`, `migration_v*.sql`, `gemini_market_context` table |
 | `executor/` | Trade execution, position monitoring, circuit breaker | `trader.py`, `monitor.py`, `circuit_breaker.py` |
+| `intelligence/` | Gemini Intelligence Layer: web investigation, market context generation | `gemini_agent.py` |
 | `risk/` | Signal auditing: position sizing, notional cap, exposure | `manager.py` |
 
 ---
@@ -28,7 +29,7 @@
 | AI Engine | `src/main.py` | `uv run engine` | `.env` |
 | Dashboard | `src/dashboard/api.py` | `uv run dashboard` | `.env` |
 
-`src/main.py` (~840 lines) orchestrates 8 parallel async loops and 30 WebSocket tasks (10 symbols × 3 timeframes). It contains: `_5min_scanner`, `_bounty_watcher`, `_continuous_signal_scanner`, `_learning_loop`, `_auto_train_loop`, `_accounting_sync_loop`, `_api_health_monitor_loop`, and position monitor.
+`src/main.py` (~920 lines) orchestrates 9 parallel async loops and 30 WebSocket tasks (10 symbols × 3 timeframes). Loops: `_5min_scanner`, `_bounty_watcher`, `_continuous_signal_scanner`, `_gemini_intelligence_loop` (NEW, starts at 3:45), `_learning_loop`, `_auto_train_loop`, `_accounting_sync_loop`, `_api_health_monitor_loop`, and position monitor.
 
 ---
 
@@ -78,6 +79,11 @@ ai/ (predictor, trainer, meta_evaluator, self_learner)
   └── repository.py → PostgreSQL
   └── constants.py
 
+intelligence/ (gemini_agent)
+  └── config/settings.py (GEMINI_API_KEY)
+  └── constants.py (GEMINI_* config)
+  └── repository.py (save/load context)
+
 risk/ (manager)
   └── constants.py
 
@@ -87,6 +93,9 @@ executor/ (trader, monitor, circuit_breaker)
   └── constants.py
 
 src/main.py  ←── imports from all of the above
+  ├── spawns _gemini_intelligence_loop (every 5 min at 3:45)
+  ├── feeds gemini_context to _autonomous_decide()
+  └── MetaEvaluator gets 6-component scoring with Gemini
 src/dashboard/api.py ←── imports from deps.py (singletons: db, trader, risk, monitor)
 ```
 

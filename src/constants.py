@@ -197,6 +197,15 @@ TELEMETRY_REFRESH_MS = 2000
 API_STATUS_REFRESH_MS = 15000
 
 # ============================================================
+# Gemini Intelligence Layer
+# ============================================================
+GEMINI_START_OFFSET_SECONDS = 225    # Minuto 3:45 del ciclo de 5m
+GEMINI_MAX_WAIT_SECONDS     = 45     # Timeout máximo para respuesta de Gemini
+GEMINI_MODEL                = 'gemini-2.0-flash'
+GEMINI_MIN_REINVESTIGATE    = 1800   # 30 min mínimo entre investigaciones
+GEMINI_VETO_BLOCKS_TRADE    = True   # Si Gemini veta → bloquea sin importar XGBoost
+
+# ============================================================
 # Versión del Sistema
 # ============================================================
-SYSMHO_VERSION = '15.2.0'
+SYSMHO_VERSION = '15.3.0'
